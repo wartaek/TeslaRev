@@ -1,6 +1,6 @@
 # REV — Virtual Engine Lab
 
-Moteur virtuel V8 indépendant de React, simulation, scénarios, GPS et accéléromètre expérimentaux, et moteur Web Audio avec quatre boucles MuscleCar02. Manifest et cache PWA dans la version compilée. Voir [AUDIO.md](AUDIO.md), [PWA.md](PWA.md), [ANDROID.md](ANDROID.md) et [VALIDATION-FINALE.md](VALIDATION-FINALE.md). Configuration Vercel prête ; déploiement HTTPS privé non effectué. Aucun backend ni dépendance Tesla.
+Moteur virtuel V8 indépendant de React, simulation, scénarios, GPS et accéléromètre expérimentaux, et moteur Web Audio avec quatre boucles MuscleCar02. Manifest et cache PWA dans la version compilée. Voir [AUDIO.md](AUDIO.md), [PWA.md](PWA.md), [ANDROID.md](ANDROID.md), [VALIDATION-FINALE.md](VALIDATION-FINALE.md) et la [feuille de route post-V1](ROADMAP.md). Aucun backend ni dépendance Tesla dans la V1.
 
 ## Lancer
 
