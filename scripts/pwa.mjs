@@ -32,8 +32,8 @@ self.addEventListener('install',event=>event.waitUntil((async()=>{
   const cache=await caches.open(CACHE);
   try { await cache.addAll(ASSETS.map(url=>new Request(url,{cache:'reload'}))); }
   catch(error) { await caches.delete(CACHE); throw error; }
+  await self.skipWaiting();
 })()));
-// No skipWaiting: an update never replaces an application during an audio session.
 self.addEventListener('activate',event=>event.waitUntil((async()=>{
   for(const key of await caches.keys()) if(key.startsWith('rev-static-')&&key!==CACHE) await caches.delete(key);
   await self.clients.claim();
@@ -42,7 +42,7 @@ self.addEventListener('fetch',event=>{
   const request=event.request,url=new URL(request.url);
   if(request.method!=='GET'||url.origin!==self.location.origin)return;
   if(request.mode==='navigate'){
-    event.respondWith((async()=>{const cache=await caches.open(CACHE);return await cache.match('/index.html')||fetch(request);})());return;
+    event.respondWith((async()=>{const cache=await caches.open(CACHE);try{const response=await fetch(request);if(response.ok)await cache.put('/index.html',response.clone());return response;}catch{return await cache.match('/index.html')||Response.error();}})());return;
   }
   if(!ASSETS.includes(url.pathname))return;
   event.respondWith((async()=>{const cache=await caches.open(CACHE);return await cache.match(url.pathname)||fetch(request);})());
