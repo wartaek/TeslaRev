@@ -102,7 +102,7 @@ function App() {
         sensors.current.stop();
         if (player.current) { player.current = null; setScenarioActive(false); setScenarioStatus('Interrompu · rejouer depuis le début'); }
         setRunning(false); setLoading(false); setAudioStatus('Audio arrêté après masquage · appuyer sur Démarrer pour reprendre');
-      }
+      } else if(sourceRef.current==='real') { sensors.current.start();setSensorState(sensors.current.snapshot(0));setAudioStatus('GPS relancé · attendre une mesure fraîche puis appuyer sur Démarrer'); }
     };
     document.addEventListener('visibilitychange', visibility);
     frame = requestAnimationFrame(tick);

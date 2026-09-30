@@ -1,6 +1,7 @@
 import { clamp, smooth, type DrivingInput } from '../engine/virtualEngine';
 import { MotionSensor, type MotionAxis } from './motionSensor';
 export type SpeedSource = 'native'|'calculated'|null;
+export type GpsHealth = 'waiting'|'fresh'|'degraded'|'lost';
 export interface SensorSnapshot { input: DrivingInput; ready: boolean; status: string; accuracy: number | null; age: number | null; speedSource: SpeedSource; motionReady: boolean; motionCalibrating: boolean; motionStatus: string }
 export type PositionFix = { latitude:number; longitude:number; accuracy:number; timestamp:number };
 const distanceMeters=(a:PositionFix,b:PositionFix)=>{const r=6371000,toRad=Math.PI/180;const dLat=(b.latitude-a.latitude)*toRad,dLon=(b.longitude-a.longitude)*toRad;const lat1=a.latitude*toRad,lat2=b.latitude*toRad;const h=Math.sin(dLat/2)**2+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;return 2*r*Math.asin(Math.min(1,Math.sqrt(h)));};
@@ -14,6 +15,7 @@ export function resolveGpsSpeed(previous:PositionFix|null,current:PositionFix,na
   const speed=distance<=noiseFloor?0:(distance-noiseFloor)/elapsed;
   return speed<=70?{speed,source:'calculated'}:null;
 }
+export function gpsHealth(age:number|null):GpsHealth{return age===null?'waiting':age<2?'fresh':age<5?'degraded':'lost';}
 // Coordinates and motion samples are processed in memory, never retained or sent.
 export class RealSensors {
   private motion = new MotionSensor();
@@ -57,15 +59,15 @@ export class RealSensors {
   private filteredAcceleration=0;
   snapshot(dt=0.02):SensorSnapshot {
     const age=this.lastAt?(performance.now()-this.lastAt)/1000:null;
-    const ready=age!==null&&age<5;
+    const health=gpsHealth(age),ready=health==='fresh'||health==='degraded';
     const motion=this.motion.snapshot();
     if(ready){
       this.filteredSpeed=smooth(this.filteredSpeed,this.speed,dt,.25);
-      const gpsAcceleration=age<2?this.acceleration:0;
-      const fusedAcceleration=motion.ready?motion.acceleration*.8+gpsAcceleration*.2:gpsAcceleration;
-      this.filteredAcceleration=smooth(this.filteredAcceleration,fusedAcceleration,dt,motion.ready?.08:.15);
+      const gpsAcceleration=health==='fresh'?this.acceleration:0;
+      const fusedAcceleration=health==='fresh'&&motion.ready?motion.acceleration*.8+gpsAcceleration*.2:gpsAcceleration;
+      this.filteredAcceleration=smooth(this.filteredAcceleration,fusedAcceleration,dt,health==='fresh'&&motion.ready?.08:.15);
     }
-    return {input:{speedKmh:this.filteredSpeed,acceleration:this.filteredAcceleration},ready,status:age!==null&&age>=5?'Signal GPS perdu : moteur arrêté':age!==null&&age>=2?'GPS retardé : réponse dégradée':this.message,accuracy:this.accuracy,age,speedSource:this.speedSource,motionReady:motion.ready,motionCalibrating:motion.calibrating,motionStatus:motion.status};
+    return {input:{speedKmh:this.filteredSpeed,acceleration:this.filteredAcceleration},ready,status:health==='lost'?'Signal GPS perdu : moteur arrêté':health==='degraded'?'Mode dégradé : accélération inertielle suspendue':this.message,accuracy:this.accuracy,age,speedSource:this.speedSource,motionReady:motion.ready&&health==='fresh',motionCalibrating:motion.calibrating,motionStatus:health==='degraded'?'GPS retardé : attente d’une mesure fraîche':motion.status};
   }
 
   configureMotion(axis:MotionAxis,sign:1|-1){this.motion.configure(axis,sign);}

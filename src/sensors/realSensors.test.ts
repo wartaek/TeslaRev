@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveGpsSpeed, type PositionFix } from './realSensors';
+import { gpsHealth, resolveGpsSpeed, type PositionFix } from './realSensors';
 
 const fix=(longitude:number,timestamp:number,accuracy=5):PositionFix=>({latitude:0,longitude,accuracy,timestamp});
 
@@ -21,4 +21,12 @@ test('GPS fallback rejects missing, badly timed and implausible fixes',()=>{
   assert.equal(resolveGpsSpeed(fix(0,1000),fix(.0001,1100),null),null);
   assert.equal(resolveGpsSpeed(fix(0,1000),fix(.0001,7000),null),null);
   assert.equal(resolveGpsSpeed(fix(0,1000),fix(.01,2000),null),null);
+});
+
+test('GPS health switches to degraded at 2 seconds and lost at 5 seconds',()=>{
+  assert.equal(gpsHealth(null),'waiting');
+  assert.equal(gpsHealth(1.999),'fresh');
+  assert.equal(gpsHealth(2),'degraded');
+  assert.equal(gpsHealth(4.999),'degraded');
+  assert.equal(gpsHealth(5),'lost');
 });
