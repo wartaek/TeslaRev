@@ -1,6 +1,6 @@
 {
-  "id": "/", "name": "REV — Moteur virtuel", "short_name": "REV",
-  "description": "Simulateur de moteur virtuel et laboratoire sonore.",
+  "id": "/", "name": "TeslaRev - Moteur virtuel V8", "short_name": "TeslaRev",
+  "description": "Moteur virtuel V8 en temps réel pour véhicule électrique.",
   "lang": "fr", "start_url": "/", "scope": "/", "display": "standalone",
   "background_color": "#101519", "theme_color": "#101519",
   "icons": [
