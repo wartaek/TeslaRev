@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { layerMix, muscleCar } from './profile';
+import { audioProfiles, layerMix, muscleCar } from './profile';
 import { readFileSync } from 'node:fs';
 test('RPM sweep keeps crossfade power continuous with two adjacent voices maximum', () => {
   let previous = layerMix(850);
@@ -16,7 +16,7 @@ test('anchors select their own sample at native pitch', () => {
   muscleCar.layers.forEach((layer,i) => { const mix = layerMix(layer.referenceRpm); assert.equal(mix[i].gain,1); assert.equal(mix[i].rate,1); });
 });
 test('prepared PCM loops are non-silent, bounded and have no abnormal wrap discontinuity', () => {
-  for(const layer of muscleCar.layers) {
+  for(const profile of audioProfiles) for(const layer of profile.layers) {
     const bytes = readFileSync(new URL('../../public' + layer.url,import.meta.url));
     assert.equal(bytes.toString('ascii',0,4),'RIFF');
     let offset = 12, data: Buffer | undefined;

@@ -1,7 +1,8 @@
 export interface AudioLayer { url: string; referenceRpm: number }
-export interface AudioProfile { id: string; name: string; layers: readonly AudioLayer[] }
+export interface AudioProfile { id: string; name: string; layers: readonly AudioLayer[]; turboGain?: number }
+
 export const muscleCar: AudioProfile = {
-  id: 'rl-musclecar02', name: 'MuscleCar02 · Rocket League',
+  id: 'rl-musclecar02', name: 'MuscleCar02', turboGain: .42,
   layers: [
     { url: '/audio/musclecar/idle.wav', referenceRpm: 850 },
     { url: '/audio/musclecar/low.wav', referenceRpm: 1700 },
@@ -9,7 +10,18 @@ export const muscleCar: AudioProfile = {
     { url: '/audio/musclecar/high.wav', referenceRpm: 6500 },
   ],
 };
-export const audioProfiles: readonly AudioProfile[] = [muscleCar];
+
+export const turboV8: AudioProfile = {
+  id: 'rev-turbo-v8', name: 'REV V8 Turbo', turboGain: .8,
+  layers: [
+    { url: '/audio/turbo-v8/idle.wav', referenceRpm: 850 },
+    { url: '/audio/turbo-v8/low.wav', referenceRpm: 1800 },
+    { url: '/audio/turbo-v8/mid.wav', referenceRpm: 3800 },
+    { url: '/audio/turbo-v8/high.wav', referenceRpm: 6500 },
+  ],
+};
+
+export const audioProfiles: readonly AudioProfile[] = [muscleCar, turboV8];
 
 // Adjacent layers only, constant-power crossfade in logarithmic RPM space.
 export function layerMix(rpm: number, profile: AudioProfile = muscleCar) {

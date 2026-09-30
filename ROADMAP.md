@@ -2,7 +2,7 @@
 
 ## V1 — preuve de concept
 
-La priorité reste la validation complète du moteur virtuel, des capteurs, de l’audio, de la PWA et de la sortie Bluetooth Tesla. Les fonctions ci-dessous ne commencent qu’une fois les contrôles V1 terminés.
+La priorité reste la validation complète du moteur virtuel, des capteurs, de l’audio, de la PWA et de la sortie Bluetooth Tesla. Deux banques sonores, le turbo et la wastegate sont maintenant intégrés ; leur rendu reste à valider en voiture. Les fonctions ci-dessous ne commencent qu’une fois les contrôles V1 terminés.
 
 ## Après la V1 — lecteur musical connecté
 

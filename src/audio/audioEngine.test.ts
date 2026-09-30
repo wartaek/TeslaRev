@@ -4,7 +4,7 @@ import { EngineAudio } from './audioEngine';
 import { VirtualEngine } from '../engine/virtualEngine';
 class Param { value=0; setTargetAtTime(v:number){this.value=v;} cancelAndHoldAtTime(){} linearRampToValueAtTime(v:number){this.value=v;} }
 class Node { gain=new Param(); frequency=new Param(); Q=new Param(); playbackRate=new Param(); threshold=new Param(); knee=new Param(); ratio=new Param(); attack=new Param(); release=new Param(); onended?:()=>void; connect(_node:unknown){return _node;} disconnect(){} start(){} stop(){this.onended?.();} getFloatTimeDomainData(data:Float32Array){data.fill(0);} }
-class Context { state='running'; currentTime=0; baseLatency=.01; destination=new Node(); resume(){return Promise.resolve();} close(){this.state='closed';return Promise.resolve();} decodeAudioData(){return Promise.resolve({});} createGain(){return new Node();} createBiquadFilter(){return new Node();} createDynamicsCompressor(){return new Node();} createAnalyser(){return new Node();} createBufferSource(){return new Node();} }
+class Context { state='running'; currentTime=0; baseLatency=.01; destination=new Node(); resume(){return Promise.resolve();} close(){this.state='closed';return Promise.resolve();} decodeAudioData(){return Promise.resolve({});} createGain(){return new Node();} createBiquadFilter(){return new Node();} createDynamicsCompressor(){return new Node();} createAnalyser(){return new Node();} createBufferSource(){return new Node();} createOscillator(){return new Node();} }
 test('audio lifecycle: cancellation, retry, caching, start/stop and dispose',async()=>{
   const originalContext=globalThis.AudioContext; const originalFetch=globalThis.fetch;
   let requests=0; let fail=false; let unblock:(()=>void)|undefined;

@@ -16,6 +16,11 @@ export function resolveGpsSpeed(previous:PositionFix|null,current:PositionFix,na
   return speed<=70?{speed,source:'calculated'}:null;
 }
 export function gpsHealth(age:number|null):GpsHealth{return age===null?'waiting':age<2?'fresh':age<5?'degraded':'lost';}
+export function responsiveSpeed(current:number,gps:number,motionAcceleration:number,motionReady:boolean,dt:number){
+  const corrected=smooth(current,gps,dt,motionReady?.1:.14);
+  if(!motionReady)return corrected;
+  return clamp(corrected+motionAcceleration*dt*3.6,Math.max(0,gps-8),gps+8);
+}
 // Coordinates and motion samples are processed in memory, never retained or sent.
 export class RealSensors {
   private motion = new MotionSensor();
@@ -62,7 +67,7 @@ export class RealSensors {
     const health=gpsHealth(age),ready=health==='fresh'||health==='degraded';
     const motion=this.motion.snapshot();
     if(ready){
-      this.filteredSpeed=smooth(this.filteredSpeed,this.speed,dt,.25);
+      this.filteredSpeed=responsiveSpeed(this.filteredSpeed,this.speed,motion.acceleration,motion.ready&&health==='fresh',dt);
       const gpsAcceleration=health==='fresh'?this.acceleration:0;
       const fusedAcceleration=health==='fresh'&&motion.ready?motion.acceleration*.8+gpsAcceleration*.2:gpsAcceleration;
       this.filteredAcceleration=smooth(this.filteredAcceleration,fusedAcceleration,dt,health==='fresh'&&motion.ready?.08:.15);

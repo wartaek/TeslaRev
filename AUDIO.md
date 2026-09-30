@@ -1,4 +1,4 @@
-# Première intégration audio — MuscleCar02
+# Banques audio — MuscleCar02 et REV V8 Turbo
 
 ## Origine et préparation
 
@@ -7,6 +7,10 @@ Source : https://github.com/ItsBrank/RocketLeague-Audio/tree/main/Motors/SFX_Mot
 Quatre samples retenus sur les huit fichiers de la banque : 0002 (ralenti), 0001 (bas régime), 0003 (régime moyen), 0007 (haut régime). Ces affectations et les références 850 / 1700 / 3600 / 6500 RPM sont des hypothèses de calibration REV, pas les métadonnées originales de Rocket League. La sélection repose sur la stabilité des enveloppes et le contenu spectral. Le rendu perceptif reste à valider à l’écoute.
 
 Conversion en WAV PCM16 mono 48 kHz pour éviter de dépendre du décodage OGG sur les appareils cibles. Retrait de la composante continue, raccord de boucle par recouvrement de 60 ms, normalisation RMS à 0.16, plafond crête à 0.85. Les fichiers, empreintes des sources et mesures sont consignés dans `public/audio/musclecar/provenance.json`.
+
+La deuxième banque, **REV V8 Turbo**, est générée par `scripts/generate-turbo-v8.mjs`. Elle contient quatre boucles PCM16 déterministes et libres de toute extraction supplémentaire d’un jeu. Sa provenance est consignée dans `public/audio/turbo-v8/provenance.json`.
+
+Les deux profils disposent maintenant d’un sifflement de turbo continu lié à la charge et au régime. Une décharge de wastegate est déclenchée lors d’un relâchement important ou d’un passage de rapport sous charge.
 
 Les sons proviennent d’une archive communautaire du jeu. La présence d’une licence dans ce dépôt ne prouve pas que son auteur possède les droits sur ces assets. Ils restent identifiés comme assets tiers du prototype privé ; aucune publication ni autorisation commerciale n’est revendiquée.
 

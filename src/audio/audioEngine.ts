@@ -2,6 +2,7 @@ import type { DrivingState } from '../engine/virtualEngine';
 import { muscleCar, layerMix, type AudioProfile } from './profile';
 type Voice = { source: AudioBufferSourceNode; gain: GainNode };
 type Transient = { source:OscillatorNode; filter:BiquadFilterNode; gain:GainNode };
+type TurboVoice = { source:OscillatorNode; filter:BiquadFilterNode; gain:GainNode };
 export class EngineAudio {
   private context?: AudioContext;
   private master?: GainNode;
@@ -18,6 +19,7 @@ export class EngineAudio {
   private lastBurbleAt = -1;
   private lastLimiterPulse = -1;
   private transients = new Set<Transient>();
+  private turbo?: TurboVoice;
   constructor(readonly profile: AudioProfile = muscleCar) {}
 
   private initialize() {
@@ -60,6 +62,13 @@ export class EngineAudio {
       source.connect(gain).connect(this.filter!); source.start();
       return { source, gain };
     });
+    if (this.profile.turboGain) {
+      const source=ctx.createOscillator();source.type='sine';source.frequency.value=900;
+      const filter=ctx.createBiquadFilter();filter.type='bandpass';filter.Q.value=5;filter.frequency.value=1800;
+      const gain=ctx.createGain();gain.gain.value=0;
+      source.connect(filter).connect(gain).connect(this.effects!);source.start();
+      this.turbo={source,filter,gain};
+    }
     return true;
   }
 
@@ -76,7 +85,14 @@ export class EngineAudio {
       voice.gain.gain.setTargetAtTime(mix[i].gain, now, 0.025);
     });
     this.filter!.frequency.setTargetAtTime(900 + load * 6500 + state.rpm * 0.2, now, 0.035);
+    if(this.turbo){
+      const boost=Math.max(0,(load-.18)/.82)*Math.max(0,(state.rpm-1400)/5100);
+      this.turbo.source.frequency.setTargetAtTime(900+state.rpm*.52,now,.04);
+      this.turbo.filter.frequency.setTargetAtTime(1300+state.rpm*.48,now,.04);
+      this.turbo.gain.gain.setTargetAtTime(this.volume*this.profile.turboGain!*boost*.22,now,.035);
+    }
     if (previous && state.shiftCount > previous.shiftCount) this.playTransient('shift', state);
+    if(previous&&previous.rpm>2200&&previous.engineLoad>.45&&(previous.engineLoad-state.engineLoad>.28||state.shiftCount>previous.shiftCount))this.playTransient('wastegate',state);
     if (state.phase === 'overrun' && state.rpm > 1800 && state.speedKmh > 8 && state.timestamp-this.lastBurbleAt >= .18) {
       this.lastBurbleAt=state.timestamp; this.playTransient('burble',state);
     }
@@ -89,7 +105,7 @@ export class EngineAudio {
     this.master!.gain.setTargetAtTime(level, now, 0.025);
   }
 
-  private playTransient(kind:'shift'|'burble'|'limiter',state:DrivingState) {
+  private playTransient(kind:'shift'|'burble'|'limiter'|'wastegate',state:DrivingState) {
     const ctx=this.context, output=this.effects;
     if(!ctx||!output||ctx.state!=='running'||this.volume===0)return;
     const now=ctx.currentTime;
@@ -103,12 +119,15 @@ export class EngineAudio {
       const variation=1+(Math.floor(state.timestamp*10)%3)*.12;
       oscillator.type='sawtooth';oscillator.frequency.setValueAtTime(72*variation,now);oscillator.frequency.exponentialRampToValueAtTime(38,now+.055);
       filter.frequency.value=380;gain.gain.exponentialRampToValueAtTime(Math.max(.0001,this.volume*(.13+.09*state.engineLoad)),now+.003);gain.gain.exponentialRampToValueAtTime(.0001,now+.065);
-    }else{
+    }else if(kind==='limiter'){
       oscillator.type='square';oscillator.frequency.setValueAtTime(58,now);
       filter.frequency.value=300;gain.gain.exponentialRampToValueAtTime(Math.max(.0001,this.volume*.16),now+.002);gain.gain.exponentialRampToValueAtTime(.0001,now+.045);
+    }else{
+      oscillator.type='sawtooth';oscillator.frequency.setValueAtTime(1550,now);oscillator.frequency.exponentialRampToValueAtTime(430,now+.16);
+      filter.type='bandpass';filter.Q.value=.7;filter.frequency.value=1350;gain.gain.exponentialRampToValueAtTime(Math.max(.0001,this.volume*this.profile.turboGain!*.24),now+.004);gain.gain.exponentialRampToValueAtTime(.0001,now+.18);
     }
     oscillator.connect(filter).connect(gain).connect(output);
-    const duration=kind==='shift'?.15:kind==='burble'?.075:.055;
+    const duration=kind==='shift'?.15:kind==='burble'?.075:kind==='wastegate'?.19:.055;
     const transient={source:oscillator,filter,gain};this.transients.add(transient);
     oscillator.onended=()=>{this.transients.delete(transient);oscillator.disconnect();filter.disconnect();gain.disconnect();};
     oscillator.start(now);oscillator.stop(now+duration);
@@ -125,6 +144,7 @@ export class EngineAudio {
       source.stop(ctx.currentTime + 0.16);
     }
     this.voices = [];
+    if(this.turbo){this.turbo.source.stop();this.turbo.source.disconnect();this.turbo.filter.disconnect();this.turbo.gain.disconnect();this.turbo=undefined;}
   }
   private releaseEffects(){for(const effect of this.transients){effect.source.onended=null;try{effect.source.stop();}catch{}effect.source.disconnect();effect.filter.disconnect();effect.gain.disconnect();}this.transients.clear();}
   stop() { ++this.generation; this.releaseVoices();this.releaseEffects(); this.lastState=undefined;this.lastBurbleAt=this.lastLimiterPulse=-1; }
@@ -135,6 +155,6 @@ export class EngineAudio {
       this.analyser.getFloatTimeDomainData(this.meter);
       rms = Math.sqrt(this.meter.reduce((sum, x) => sum + x * x, 0) / this.meter.length);
     }
-    return { state: this.context?.state ?? 'inactive', loaded: this.buffers?.length ?? 0, voices: this.voices.length, effects:this.transients.size, rms, baseLatencyMs: this.context ? Math.round(this.context.baseLatency * 1000) : null };
+    return { state: this.context?.state ?? 'inactive', loaded: this.buffers?.length ?? 0, voices: this.voices.length, effects:this.transients.size+(this.turbo?1:0), rms, baseLatencyMs: this.context ? Math.round(this.context.baseLatency * 1000) : null };
   }
 }

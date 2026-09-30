@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { gpsHealth, resolveGpsSpeed, type PositionFix } from './realSensors';
+import { gpsHealth, resolveGpsSpeed, responsiveSpeed, type PositionFix } from './realSensors';
 
 const fix=(longitude:number,timestamp:number,accuracy=5):PositionFix=>({latitude:0,longitude,accuracy,timestamp});
 
@@ -29,4 +29,13 @@ test('GPS health switches to degraded at 2 seconds and lost at 5 seconds',()=>{
   assert.equal(gpsHealth(2),'degraded');
   assert.equal(gpsHealth(4.999),'degraded');
   assert.equal(gpsHealth(5),'lost');
+});
+
+test('motion predicts speed between GPS fixes while remaining bounded around GPS',()=>{
+  const gpsOnly=responsiveSpeed(20,40,3,false,.02);
+  const predicted=responsiveSpeed(20,40,3,true,.02);
+  assert.ok(predicted>gpsOnly);
+  let speed=40;
+  for(let i=0;i<100;i++)speed=responsiveSpeed(speed,40,5,true,.02);
+  assert.ok(speed<=48);
 });

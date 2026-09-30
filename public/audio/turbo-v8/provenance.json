@@ -1,0 +1,38 @@
+{
+  "license": "Project-generated audio",
+  "processing": "Procedural periodic V8 pulse synthesis; mono PCM16 WAV.",
+  "samples": [
+    {
+      "output": "idle.wav",
+      "referenceRpm": 850,
+      "sampleRate": 48000,
+      "duration": 2,
+      "rms": 0.15,
+      "source": "Generated deterministically by scripts/generate-turbo-v8.mjs"
+    },
+    {
+      "output": "low.wav",
+      "referenceRpm": 1800,
+      "sampleRate": 48000,
+      "duration": 2,
+      "rms": 0.15,
+      "source": "Generated deterministically by scripts/generate-turbo-v8.mjs"
+    },
+    {
+      "output": "mid.wav",
+      "referenceRpm": 3800,
+      "sampleRate": 48000,
+      "duration": 2,
+      "rms": 0.15,
+      "source": "Generated deterministically by scripts/generate-turbo-v8.mjs"
+    },
+    {
+      "output": "high.wav",
+      "referenceRpm": 6500,
+      "sampleRate": 48000,
+      "duration": 2,
+      "rms": 0.15,
+      "source": "Generated deterministically by scripts/generate-turbo-v8.mjs"
+    }
+  ]
+}
