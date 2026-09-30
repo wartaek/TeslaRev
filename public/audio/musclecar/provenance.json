@@ -1,0 +1,54 @@
+{
+  "source": "https://github.com/ItsBrank/RocketLeague-Audio/tree/main/Motors/SFX_Motor_MuscleCar02",
+  "processing": "Mono PCM16 WAV; DC removal; 60ms seam overlap; RMS normalization with peak bound.",
+  "samples": [
+    {
+      "source": "SFX_Motor_MuscleCar02_0002.ogg",
+      "sourceSha256": "4a293c0d12ea65a7bda900a31aa61ebd62a8bb8652c2c1e47af1cc9685c0320e",
+      "output": "idle.wav",
+      "sampleRate": 48000,
+      "duration": 1.9613333333333334,
+      "rms": 0.16,
+      "peak": 0.6707672709527733,
+      "seamJump": 0.001485588627614209,
+      "referenceRpm": 850,
+      "calibration": "Provisional perceptual mapping, not original game RPM"
+    },
+    {
+      "source": "SFX_Motor_MuscleCar02_0001.ogg",
+      "sourceSha256": "9b1680f3e37ab3aa645ca73bbc40cf165d94d3fa031e8cb6185d1f1179826809",
+      "output": "low.wav",
+      "sampleRate": 48000,
+      "duration": 1.3853333333333333,
+      "rms": 0.16,
+      "peak": 0.5047973810025895,
+      "seamJump": 0.0092020422830765,
+      "referenceRpm": 1700,
+      "calibration": "Provisional perceptual mapping, not original game RPM"
+    },
+    {
+      "source": "SFX_Motor_MuscleCar02_0003.ogg",
+      "sourceSha256": "f2ba65bbebec7b14b545df6e3ed2df784a93f552e7793f08aa89c1f73e271250",
+      "output": "mid.wav",
+      "sampleRate": 48000,
+      "duration": 1.9693333333333334,
+      "rms": 0.16,
+      "peak": 0.64179974026567,
+      "seamJump": 0.02072416496821068,
+      "referenceRpm": 3600,
+      "calibration": "Provisional perceptual mapping, not original game RPM"
+    },
+    {
+      "source": "SFX_Motor_MuscleCar02_0007.ogg",
+      "sourceSha256": "aaa6bc387822012921433fbce1b0b8f035c5ebbe534d84a536b6d94202fe5162",
+      "output": "high.wav",
+      "sampleRate": 48000,
+      "duration": 1.2946666666666666,
+      "rms": 0.16000000000000003,
+      "peak": 0.624172791260823,
+      "seamJump": 0.020903929219758505,
+      "referenceRpm": 6500,
+      "calibration": "Provisional perceptual mapping, not original game RPM"
+    }
+  ]
+}
