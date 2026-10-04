@@ -1,0 +1,39 @@
+{
+  "license": "Project-generated audio",
+  "character": "REV McLaren-style V8 synthetic",
+  "processing": "Procedural periodic synthesis; no sampled trademark or game audio; mono PCM16 WAV.",
+  "samples": [
+    {
+      "output": "idle.wav",
+      "referenceRpm": 850,
+      "sampleRate": 48000,
+      "duration": 2,
+      "rms": 0.15,
+      "source": "Generated deterministically by scripts/generate-extra-profiles.mjs"
+    },
+    {
+      "output": "low.wav",
+      "referenceRpm": 1800,
+      "sampleRate": 48000,
+      "duration": 2,
+      "rms": 0.15,
+      "source": "Generated deterministically by scripts/generate-extra-profiles.mjs"
+    },
+    {
+      "output": "mid.wav",
+      "referenceRpm": 3800,
+      "sampleRate": 48000,
+      "duration": 2,
+      "rms": 0.15,
+      "source": "Generated deterministically by scripts/generate-extra-profiles.mjs"
+    },
+    {
+      "output": "high.wav",
+      "referenceRpm": 6500,
+      "sampleRate": 48000,
+      "duration": 2,
+      "rms": 0.15,
+      "source": "Generated deterministically by scripts/generate-extra-profiles.mjs"
+    }
+  ]
+}

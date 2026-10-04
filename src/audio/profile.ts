@@ -21,7 +21,21 @@ export const turboV8: AudioProfile = {
   ],
 };
 
-export const audioProfiles: readonly AudioProfile[] = [muscleCar, turboV8];
+const generatedProfile = (id:string,name:string,folder:string,turboGain=0):AudioProfile => ({
+  id,name,turboGain,
+  layers:[
+    {url:`/audio/${folder}/idle.wav`,referenceRpm:850},
+    {url:`/audio/${folder}/low.wav`,referenceRpm:1800},
+    {url:`/audio/${folder}/mid.wav`,referenceRpm:3800},
+    {url:`/audio/${folder}/high.wav`,referenceRpm:6500},
+  ],
+});
+
+export const f1V10=generatedProfile('rev-f1-v10','F1 V10 · synthétique','f1-v10',.28);
+export const mclarenV8=generatedProfile('rev-mclaren-v8','McLaren V8 · synthétique','mclaren-v8',.72);
+export const voltic=generatedProfile('rev-voltic','Voltic électrique · synthétique','voltic',.18);
+
+export const audioProfiles: readonly AudioProfile[] = [muscleCar, turboV8, f1V10, mclarenV8, voltic];
 
 // Adjacent layers only, constant-power crossfade in logarithmic RPM space.
 export function layerMix(rpm: number, profile: AudioProfile = muscleCar) {
