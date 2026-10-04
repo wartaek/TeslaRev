@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { VirtualEngine, V8, type GearboxMode } from './engine/virtualEngine';
-import { DrivingSimulator } from './simulation/drivingSimulator';
+import { DrivingSimulator, SIMULATION_MAX_SPEED } from './simulation/drivingSimulator';
 import { EngineAudio } from './audio/audioEngine';
 import { audioProfiles } from './audio/profile';
 import { loadSettings, saveSettings } from './config/settings';
@@ -21,8 +21,8 @@ function App() {
   const audio = useRef(new EngineAudio(audioProfiles.find(p=>p.id===initialSettings.profileId)!));
   const player = useRef<ScenarioPlayer | null>(null);
   const sensors = useRef(new RealSensors());
-  const sourceRef = useRef<'simulation'|'real'>('simulation');
-  const [source,setSource] = useState<'simulation'|'real'>('simulation');
+  const sourceRef = useRef<'simulation'|'real'>(initialSettings.source);
+  const [source,setSource] = useState<'simulation'|'real'>(initialSettings.source);
   const [sensorState,setSensorState] = useState(sensors.current.snapshot());
   const [motionAxis,setMotionAxis] = useState<MotionAxis>('y');
   const [motionSign,setMotionSign] = useState<1|-1>(1);
@@ -51,13 +51,23 @@ function App() {
   const [history, setHistory] = useState<{rpm: number; gear: number; time: number}[]>([]);
   const [events, setEvents] = useState<string[]>([]);
   const [paused, setPaused] = useState(false);
-  const [driveMode,setDriveMode] = useState(false);
+  const [driveMode,setDriveMode] = useState(true);
   const [wakeStatus,setWakeStatus] = useState('Écran actif normalement');
   useEffect(() => {
     audio.current.setVolume(volume / 100);
     engine.current.gearboxMode = gearboxMode;
-    setSaved(saveSettings({volume, profileId, gearboxMode, maxRpm}));
-  }, [volume, profileId, gearboxMode, maxRpm]);
+    setSaved(saveSettings({volume, profileId, gearboxMode, maxRpm, source}));
+  }, [volume, profileId, gearboxMode, maxRpm, source]);
+  useEffect(() => {
+    let disposed = false;
+    // Reuse an existing browser grant without prompting at page load.
+    void navigator.permissions?.query({name:'geolocation'}).then(permission => {
+      if(!disposed && permission.state==='granted' && sourceRef.current==='real') {
+        sensors.current.start();setSensorState(sensors.current.snapshot(0));
+      }
+    }).catch(()=>{});
+    return () => { disposed=true; };
+  }, []);
   useEffect(() => {
     let frame = 0, last = performance.now(), accumulated = 0, lastUi = 0;
     const tick = (now: number) => {
@@ -125,6 +135,7 @@ function App() {
   const changeSource = (value: 'simulation'|'real') => {
     if(running||loading)return;
     sensors.current.stop(); sourceRef.current=value;setSource(value);
+    if(value==='real')sensors.current.start();
     engine.current = createEngine(gearboxMode,maxRpm);
     setState(engine.current.state);setHistory([]);setEvents([]);setSensorState(sensors.current.snapshot());
   };
@@ -142,10 +153,10 @@ function App() {
   const configureMotion = (axis:MotionAxis,sign:1|-1) => { setMotionAxis(axis);setMotionSign(sign);sensors.current.configureMotion(axis,sign);setSensorState(sensors.current.snapshot(0)); };
   const calibrateMotion = async () => { await sensors.current.calibrateMotion();setSensorState(sensors.current.snapshot(0)); };
   const changeMaxRpm = (value:number) => { setMaxRpm(value);engine.current=createEngine(gearboxMode,value);setState(engine.current.state);setHistory([]);setEvents([]); };
-  const reset = () => { operation.current++; sensors.current.stop(); player.current = null; setScenarioActive(false); setScenarioTime(0); setScenarioStatus('Prêt'); audio.current.stop(); setLoading(false); setAudioStatus('Prêt'); engine.current = createEngine(gearboxMode,maxRpm); simulator.current = new DrivingSimulator(); setRunning(false); setMode('pedals'); setThrottle(0); setBrake(0); setSpeed(0); setAcceleration(0); setHistory([]); setEvents([]); setState(engine.current.state); };
+  const reset = () => { operation.current++; player.current = null; setScenarioActive(false); setScenarioTime(0); setScenarioStatus('Prêt'); audio.current.stop(); setLoading(false); setAudioStatus('Prêt'); engine.current = createEngine(gearboxMode,maxRpm); simulator.current = new DrivingSimulator(); setRunning(false); setMode('pedals'); setThrottle(0); setBrake(0); setSpeed(0); setAcceleration(0); setHistory([]); setEvents([]); setState(engine.current.state); };
   const toggleEngine = async (scenario?: Scenario) => {
-    if (!scenario && (running || loading)) { operation.current++; sensors.current.stop(); player.current = null; setScenarioActive(false); setScenarioStatus('Arrêté · rejouer depuis le début'); audio.current.stop(); engine.current.stop(); setRunning(false); setLoading(false); setAudioStatus('Arrêté'); return; }
-    if(sourceRef.current==='real' && !sensors.current.snapshot().ready){setAudioStatus('Active le GPS et attends une mesure valide avant de démarrer.');return;}
+    if (!scenario && (running || loading)) { operation.current++; player.current = null; setScenarioActive(false); setScenarioStatus('Arrêté · rejouer depuis le début'); audio.current.stop(); engine.current.stop(); setRunning(false); setLoading(false); setAudioStatus('Arrêté'); return; }
+    if(sourceRef.current==='real' && !sensors.current.snapshot().ready){sensors.current.start();setSensorState(sensors.current.snapshot(0));setAudioStatus('GPS lancé : autorise la localisation si nécessaire, puis attends une mesure valide avant de démarrer.');return;}
     if (scenario) {
       audio.current.stop(); player.current = null;
       engine.current = createEngine(gearboxMode,maxRpm);
@@ -173,7 +184,7 @@ function App() {
     <section className="dashboard" aria-label="Moteur virtuel"><div className="dashhead"><span>V8 <small>6 RAPPORTS / AUTO</small></span><span className={running ? 'live' : ''}>{paused ? 'Simulation en pause' : phases[state.phase]}</span></div>
       <div className="gearbox-control"><div className="tabs"><button disabled={running||loading} aria-pressed={source==='simulation'} onClick={()=>changeSource('simulation')}>Simulation</button><button disabled={running||loading} aria-pressed={source==='real'} onClick={()=>changeSource('real')}>GPS réel</button></div></div>
       {source==='real'&&<div className="sound-picker"><p>Fixe le téléphone avant de configurer les capteurs.</p><button className="reset" disabled={running||loading} onClick={()=>{sensors.current.start();setSensorState(sensors.current.snapshot(0));}}>1. Activer / relancer le GPS</button><p role="status">{sensorState.status}</p><p>Précision : {sensorState.accuracy===null?'—':`${sensorState.accuracy.toFixed(0)} m`} · Vitesse : {sensorState.speedSource==='native'?'capteur GPS':sensorState.speedSource==='calculated'?'calculée entre deux positions':'—'} · Dernière mesure : {sensorState.age===null?'—':`${sensorState.age.toFixed(1)} s`}</p><label htmlFor="motion-axis">AXE DU TÉLÉPHONE <span>sens de la marche</span></label><select id="motion-axis" value={`${motionAxis}:${motionSign}`} disabled={running||loading||sensorState.motionCalibrating} onChange={e=>{const [axis,sign]=e.target.value.split(':');configureMotion(axis as MotionAxis,Number(sign) as 1|-1);}}><option value="y:1">Haut du téléphone vers l’avant</option><option value="y:-1">Bas du téléphone vers l’avant</option><option value="x:1">Côté droit vers l’avant</option><option value="x:-1">Côté gauche vers l’avant</option><option value="z:1">Écran vers l’avant</option><option value="z:-1">Dos du téléphone vers l’avant</option></select><button className="reset" disabled={running||loading||!sensorState.ready||sensorState.motionCalibrating} onClick={()=>void calibrateMotion()}>2. {sensorState.motionCalibrating?'Calibration en cours…':'Calibrer à l’arrêt'}</button><p role="status">{sensorState.motionStatus}</p><p>{sensorState.motionReady?'Réponse rapide par accéléromètre + correction GPS.':'Accélération estimée par GPS tant que le capteur mouvement n’est pas prêt.'} Données traitées localement, sans enregistrement ni envoi.</p></div>}
-      <div className="sound-picker">
+      <div className="sound-picker engine-picker">
         <label htmlFor="engine-sound">SON MOTEUR <span>{audioProfiles.length} profil{audioProfiles.length > 1 ? 's' : ''} disponible{audioProfiles.length > 1 ? 's' : ''}</span></label>
         <select id="engine-sound" value={profileId} onChange={e => selectProfile(e.target.value)} disabled={running || loading} aria-describedby="sound-help">
           {audioProfiles.map(profile => <option key={profile.id} value={profile.id}>{profile.name}</option>)}
@@ -182,6 +193,7 @@ function App() {
         {selectedProfile.description&&<p>{selectedProfile.description}</p>}
         {selectedProfile.credit&&<p><a href={selectedProfile.credit.url} target="_blank" rel="noreferrer">{selectedProfile.credit.label}</a></p>}
       </div>
+      <p className="drive-status" role="status">{source==='real'?sensorState.status:'Simulation'} · {audioStatus}</p>
       <div className="rpm"><strong>{Math.round(state.rpm).toLocaleString('fr-FR')}</strong><span>RPM</span></div>
       <div className="meter" role="meter" aria-label="Régime moteur" aria-valuemin={0} aria-valuemax={maxRpm} aria-valuenow={Math.round(state.rpm)}><div style={{width: `${state.rpm/maxRpm*100}%`}}/></div><div className="scale"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>{(maxRpm/1000).toFixed(2).replace(/0$/,'')} × 1000</span></div>
       <div className="stats"><div><label>RAPPORT</label><strong>{state.gear}<small> / 6</small></strong></div><div><label>VITESSE</label><strong>{state.speedKmh.toFixed(0)}<small> km/h</small></strong></div><div><label>CHARGE</label><strong>{(state.engineLoad * 100).toFixed(0)}<small> %</small></strong></div></div>
@@ -196,7 +208,7 @@ function App() {
     </section>
     {source==='simulation'&&<section className="panel scenario-panel"><h2>Trajets automatiques</h2><label htmlFor="scenario">Scénario</label><select id="scenario" value={scenarioId} disabled={running || loading} onChange={e=>{setScenarioId(e.target.value);setScenarioTime(0);setScenarioStatus('Prêt');}}>{scenarios.map(s=><option key={s.id} value={s.id}>{s.name} · {s.points.at(-1)![0]} s</option>)}</select><p className="hint">{selectedScenario.description} Même trajet à chaque lecture, quel que soit le mode de boîte.</p><progress aria-label="Progression du scénario" value={scenarioTime} max={selectedScenario.points.at(-1)![0]}/><p className="hint" role="status">{scenarioStatus} · {scenarioTime.toFixed(1)} / {selectedScenario.points.at(-1)![0]} s</p><button className="primary" disabled={running || loading} onClick={()=>void toggleEngine(selectedScenario)}>{scenarioTime>0?'Rejouer depuis le début':'Lancer le scénario'}</button></section>}
     <div className="lower"><section className="panel"><h2>Commandes de simulation</h2><fieldset disabled={source==='real' || scenarioActive || loading}><legend className="hint">{source==='real'?'Désactivées en mode GPS':scenarioActive?'Scénario en cours · commandes manuelles suspendues':'Pilotage manuel'}</legend><div className="tabs">{(['pedals', 'speed', 'acceleration'] as const).map(m => <button key={m} aria-pressed={mode === m} onClick={() => changeMode(m)}>{m === 'pedals' ? 'Pédales' : m === 'speed' ? 'Vitesse cible' : 'Accélération'}</button>)}</div>
-    {mode === 'pedals' ? <><Slider label="Accélérateur simulé" value={throttle} max={100} unit="%" onChange={v => {setThrottle(v); simulator.current.throttle = v / 100;}}/><Slider label="Frein" value={brake} max={100} unit="%" onChange={v => {setBrake(v); simulator.current.brake = v / 100;}}/></> : mode === 'speed' ? <Slider label="Vitesse cible" value={speed} max={130} unit="km/h" onChange={v => {setSpeed(v); simulator.current.targetSpeed = v;}}/> : <Slider label="Accélération imposée" value={acceleration} min={-6} max={3.5} step={0.1} unit="m/s²" onChange={v => {setAcceleration(v); simulator.current.accelerationCommand = v;}}/>}
+    {mode === 'pedals' ? <><Slider label="Accélérateur simulé" value={throttle} max={100} unit="%" onChange={v => {setThrottle(v); simulator.current.throttle = v / 100;}}/><Slider label="Frein" value={brake} max={100} unit="%" onChange={v => {setBrake(v); simulator.current.brake = v / 100;}}/></> : mode === 'speed' ? <Slider label="Vitesse cible" value={speed} max={SIMULATION_MAX_SPEED} unit="km/h" onChange={v => {setSpeed(v); simulator.current.targetSpeed = v;}}/> : <Slider label="Accélération imposée" value={acceleration} min={-6} max={3.5} step={0.1} unit="m/s²" onChange={v => {setAcceleration(v); simulator.current.accelerationCommand = v;}}/>}
     </fieldset><p className="hint">Les commandes produisent un mouvement simulé. Le moteur déduit sa charge de ce mouvement, comme avec les futurs capteurs.</p><div className="telemetry"><span>Accélération <b>{state.acceleration.toFixed(2)} m/s²</b></span><span>Throttle estimé <b>{(state.virtualThrottle * 100).toFixed(0)} %</b></span></div><button className="reset" onClick={reset}>Réinitialiser l’essai</button></section>
     <section className="panel"><h2>Les 12 dernières secondes</h2><svg viewBox="0 0 480 150" role="img" aria-label="Historique du régime en vert et des rapports en orange"><path d="M0 25H480 M0 75H480 M0 125H480" stroke="#29343a"/><polyline fill="none" stroke="#c0f879" strokeWidth="2" points={history.map((p,i)=>`${i*2},${145-p.rpm/maxRpm*135}`).join(' ')}/><polyline fill="none" stroke="#eaa65b" strokeWidth="1.5" points={history.map((p,i)=>`${i*2},${145-p.gear/6*135}`).join(' ')}/></svg><p className="legend">● RPM <span>● Rapport</span></p><ul className="events">{events.length ? events.map((e,i)=><li key={i}>{e}</li>) : <li>Les passages de rapports apparaîtront ici.</li>}</ul></section></div>
     <PwaPanel busy={running || loading}/>

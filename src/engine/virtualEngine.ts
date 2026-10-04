@@ -8,6 +8,16 @@ export const clamp = (x: number, min: number, max: number) => Math.min(max, Math
 export const smooth = (value: number, target: number, dt: number, tau: number) => value + (target - value) * (1 - Math.exp(-dt / tau));
 export function wheelRpm(speed: number, gear: number, p: EngineProfile = V8) { return Math.max(0, speed) / 3.6 / p.wheelCircumferenceM * 60 * p.gearRatios[gear - 1] * p.finalDrive; }
 export function throttleTarget(speed: number, acceleration: number) { return speed < 1.5 && acceleration <= 0 ? 0 : acceleration < -0.3 ? 0 : clamp(0.15 + acceleration / 3, 0, 1); }
+// Perceptual road-car schedule, not Tesla transmission telemetry.
+const roadShiftSpeeds = [15, 30, 50, 75, 105];
+export function shiftSpeed(gear: number, load: number, mode: GearboxMode) {
+  return (roadShiftSpeeds[gear - 1] ?? Infinity) * (mode === 'sport' ? 1.4 : 1) * (1 + .65 * clamp(load, 0, 1));
+}
+export function cruisingGear(speed: number, mode: GearboxMode, gears = 6) {
+  let gear = 1;
+  while (gear < gears && speed >= shiftSpeed(gear, .15, mode)) gear++;
+  return gear;
+}
 export class VirtualEngine {
   state: DrivingState = { speedKmh: 0, acceleration: 0, rpm: 0, gear: 1, virtualThrottle: 0, engineLoad: 0, isMoving: false, timestamp: 0, phase: 'off', shiftCount: 0 };
   private running = false;
@@ -20,8 +30,8 @@ export class VirtualEngine {
   start(speed = 0) {
     this.running = true;
     this.shiftRemaining = this.cooldown = this.dwell = this.stationaryTime = this.candidate = 0;
-    let gear = 1;
-    while (gear < this.profile.gearRatios.length && wheelRpm(speed, gear, this.profile) > 3000) gear++;
+    let gear = cruisingGear(speed, this.gearboxMode, this.profile.gearRatios.length);
+    while (gear < this.profile.gearRatios.length && wheelRpm(speed, gear, this.profile) > this.profile.maxRpm * .9) gear++;
     this.state = { ...this.state, speedKmh: Math.max(0, speed), acceleration: 0, gear, rpm: clamp(wheelRpm(speed, gear, this.profile), this.profile.idleRpm, this.profile.maxRpm), virtualThrottle: 0, engineLoad: 0, isMoving: speed > 3, phase: speed > 3 ? 'drive' : 'idle', shiftCount: 0, timestamp: 0 };
   }
   stop() { this.running = false; this.state = { ...this.state, rpm: 0, virtualThrottle: 0, engineLoad: 0, phase: 'off' }; }
@@ -42,14 +52,13 @@ export class VirtualEngine {
     let hold = 0.15;
     if (!this.shiftRemaining && s.speedKmh > 3) {
       if (rawRpm >= p.maxRpm || this.cooldown === 0) {
-        const shiftThreshold = this.gearboxMode === 'sport' ? 0.55 + 0.4 * s.virtualThrottle : 0.4 + 0.5 * s.virtualThrottle;
-        if (rawRpm > p.maxRpm * shiftThreshold && s.gear < p.gearRatios.length && wheelRpm(s.speedKmh, s.gear + 1, p) >= 1200) next++;
+        if ((s.speedKmh >= shiftSpeed(s.gear, s.virtualThrottle, this.gearboxMode) || rawRpm >= p.maxRpm) && s.gear < p.gearRatios.length) next++;
         else if (s.virtualThrottle > 0.8 && rawRpm < p.maxRpm * 0.55) {
           for (let g = Math.max(1, s.gear - 2); g < s.gear; g++) {
             const rpm = wheelRpm(s.speedKmh, g, p);
-            if (rpm >= p.maxRpm * 0.55 && rpm <= p.maxRpm * 0.85) { next = g; break; }
+            if (s.speedKmh < shiftSpeed(g, s.virtualThrottle, this.gearboxMode) * .9 && rpm <= p.maxRpm * 0.85) { next = g; break; }
           }
-        } else if (rawRpm < 1300 && s.gear > 1 && wheelRpm(s.speedKmh, s.gear - 1, p) < p.maxRpm * 0.9) { next--; hold = 0.3; }
+        } else if (s.gear > 1 && s.speedKmh < shiftSpeed(s.gear - 1, .15, this.gearboxMode) * .72 && wheelRpm(s.speedKmh, s.gear - 1, p) < p.maxRpm * 0.9) { next--; hold = 0.3; }
       }
     }
     if (next !== s.gear) {

@@ -1,13 +1,14 @@
 import { audioProfiles } from '../audio/profile';
 import type { GearboxMode } from '../engine/virtualEngine';
-export interface Settings { volume: number; profileId: string; gearboxMode: GearboxMode; maxRpm: number }
+export interface Settings { volume: number; profileId: string; gearboxMode: GearboxMode; maxRpm: number; source: 'real'|'simulation' }
 export const SETTINGS_KEY = 'rev.settings.v1';
 export function parseSettings(raw: string | null): Settings {
-  const defaults: Settings = { volume: 20, profileId: audioProfiles[0].id, gearboxMode: 'calm', maxRpm: 6500 };
+  const defaults: Settings = { volume: 20, profileId: audioProfiles[0].id, gearboxMode: 'calm', maxRpm: 6500, source: 'real' };
   try {
     const value = JSON.parse(raw ?? 'null');
     if (!value || typeof value !== 'object') return defaults;
     return {
+      source: value.source === 'simulation' ? 'simulation' : 'real',
       volume: typeof value.volume === 'number' && Number.isFinite(value.volume) ? Math.min(100,Math.max(0,value.volume)) : defaults.volume,
       profileId: audioProfiles.some(p=>p.id===value.profileId) ? value.profileId : defaults.profileId,
       gearboxMode: value.gearboxMode === 'sport' ? 'sport' : 'calm',

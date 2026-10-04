@@ -1,8 +1,26 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { gpsHealth, resolveGpsSpeed, responsiveSpeed, type PositionFix } from './realSensors';
+import { RealSensors, gpsHealth, resolveGpsSpeed, responsiveSpeed, type PositionFix } from './realSensors';
 
 const fix=(longitude:number,timestamp:number,accuracy=5):PositionFix=>({latitude:0,longitude,accuracy,timestamp});
+test('first GPS fix starts at actual road speed, including above 130',()=>{
+  const originalNavigator=Object.getOwnPropertyDescriptor(globalThis,'navigator');
+  const originalWindow=Object.getOwnPropertyDescriptor(globalThis,'window');
+  let success:PositionCallback|undefined;
+  try {
+    Object.defineProperty(globalThis,'window',{configurable:true,value:{isSecureContext:true}});
+    Object.defineProperty(globalThis,'navigator',{configurable:true,value:{geolocation:{watchPosition:(callback:PositionCallback)=>{success=callback;return 1;},clearWatch:()=>{}}}});
+    const sensors=new RealSensors();sensors.start();
+    success!({coords:{speed:150/3.6,accuracy:5,latitude:0,longitude:0},timestamp:Date.now()} as GeolocationPosition);
+    const reading=sensors.snapshot(0);
+    assert.equal(reading.ready,true);assert.ok(Math.abs(reading.input.speedKmh-150)<.001);
+    assert.equal(reading.input.acceleration,0);
+    sensors.stop();assert.equal(sensors.snapshot(0).ready,false);
+  } finally {
+    if(originalNavigator)Object.defineProperty(globalThis,'navigator',originalNavigator);else Reflect.deleteProperty(globalThis,'navigator');
+    if(originalWindow)Object.defineProperty(globalThis,'window',originalWindow);else Reflect.deleteProperty(globalThis,'window');
+  }
+});
 
 test('GPS uses a valid native speed without waiting for two positions',()=>{
   assert.deepEqual(resolveGpsSpeed(null,fix(0,1000),12.5),{speed:12.5,source:'native'});

@@ -52,6 +52,7 @@ export class RealSensors {
       if(!resolved){this.message='Deux positions GPS sont nécessaires pour calculer la vitesse';return;}
       const measuredSpeed=resolved.speed,source=resolved.source;
       const fresh=this.lastAt>0&&elapsed>.1&&elapsed<3;
+      if(!fresh)this.filteredSpeed=measuredSpeed*3.6;
       this.acceleration=fresh?clamp((measuredSpeed-this.previousSpeed)/elapsed,-8,5):0;
       this.speed=measuredSpeed*3.6;this.previousSpeed=measuredSpeed;this.lastAt=performance.now();this.speedSource=source;this.message=source==='native'?'GPS actif':'GPS actif · vitesse calculée';
     },error=>{

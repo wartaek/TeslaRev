@@ -3,12 +3,17 @@ import { muscleCar, layerMix, type AudioProfile } from './profile';
 type Voice = { source: AudioBufferSourceNode; gain: GainNode };
 type Transient = { source:OscillatorNode; filter:BiquadFilterNode; gain:GainNode };
 type TurboVoice = { source:OscillatorNode; filter:BiquadFilterNode; gain:GainNode };
+export function cabinResponse(load: number, rpm: number) {
+  const charge = Math.min(1, Math.max(0, load));
+  return { cutoff: Math.min(3800, 850 + 2200 * charge + Math.max(0, rpm) * .07), level: .45 + .45 * charge };
+}
 export class EngineAudio {
   private context?: AudioContext;
   private master?: GainNode;
   private filter?: BiquadFilterNode;
   private analyser?: AnalyserNode;
   private effects?: GainNode;
+  private effectsFilter?: BiquadFilterNode;
   private meter = new Float32Array(512);
   private buffers?: AudioBuffer[];
   private loading?: Promise<void>;
@@ -35,7 +40,9 @@ export class EngineAudio {
     this.analyser = ctx.createAnalyser(); this.analyser.fftSize = 512;
     this.filter.connect(this.master).connect(compressor).connect(this.analyser).connect(ctx.destination);
     this.effects = ctx.createGain(); this.effects.gain.value = 1;
-    this.effects.connect(compressor);
+    this.effectsFilter = ctx.createBiquadFilter();
+    this.effectsFilter.type = 'lowpass';this.effectsFilter.Q.value=.6;
+    this.effects.connect(this.effectsFilter).connect(compressor);
     return ctx;
   }
 
@@ -84,7 +91,9 @@ export class EngineAudio {
       voice.source.playbackRate.setTargetAtTime(mix[i].rate, now, 0.025);
       voice.gain.gain.setTargetAtTime(mix[i].gain, now, 0.025);
     });
-    this.filter!.frequency.setTargetAtTime(900 + load * 6500 + state.rpm * 0.2, now, 0.035);
+    const cabin = cabinResponse(load, state.rpm);
+    this.filter!.frequency.setTargetAtTime(cabin.cutoff, now, 0.035);
+    this.effectsFilter!.frequency.setTargetAtTime(cabin.cutoff, now, 0.035);
     if(this.turbo){
       const boost=Math.max(0,(load-.18)/.82)*Math.max(0,(state.rpm-1400)/5100);
       this.turbo.source.frequency.setTargetAtTime(900+state.rpm*.52,now,.04);
@@ -101,7 +110,7 @@ export class EngineAudio {
     }
     const limiter = state.phase === 'limiter' && state.timestamp%(.09) < .038 ? 0.16 : 1;
     const shift = state.phase === 'shift' ? 0.38 : 1;
-    const level = state.phase === 'off' ? 0 : this.volume * (0.3 + 0.7 * load) * limiter * shift;
+    const level = state.phase === 'off' ? 0 : this.volume * cabin.level * limiter * shift;
     this.master!.gain.setTargetAtTime(level, now, 0.025);
   }
 

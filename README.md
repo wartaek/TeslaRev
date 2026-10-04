@@ -34,21 +34,21 @@ Le régime cible est le maximum du régime roues et du ralenti de lancement : `8
 
 Throttle cible : `clamp(0.15 + accélération/3, 0, 1)`. Cible nulle en décélération sous −0.3 m/s², ou sous 1.5 km/h sans accélération positive. Lissage exponentiel : 80 ms à la montée, 180 ms à la descente. Charge = throttle, réduite à 15 % pendant un changement. En mode réel, la couche capteurs fusionne l’accéléromètre avec la correction GPS avant d’alimenter le moteur.
 
-Montée : RPM roues au-dessus de `maxRpm × (0.4 + 0.5 × throttle)` pendant 150 ms, avec au moins 1200 RPM dans le rapport suivant. Un changement dure 220 ms ; délai supplémentaire de 800 ms avant le suivant. Protection au régime maximal prioritaire sur ce délai après le changement en cours.
+Montée : seuils de vitesse 15 / 30 / 50 / 75 / 105 km/h × (1 + 0.65 × throttle) en Calme, puis × 1.4 en Sport. Confirmation pendant 150 ms. Un changement dure 220 ms ; délai supplémentaire de 800 ms avant le suivant. Protection au régime maximal prioritaire sur ce délai après le changement en cours.
 
-Rétrogradage : sous 1300 RPM pendant 300 ms, un rapport à la fois, régime obtenu inférieur à 90 % du maximum. Kickdown : throttle > 0.8 et RPM roues < 55 % du maximum pendant 150 ms ; recherche du plus petit rapport parmi les deux précédents donnant 55–85 % du maximum. Si aucun ne convient, conserver le rapport.
+Rétrogradage : sous 72 % du seuil de croisière du rapport précédent pendant 300 ms, avec protection contre le surrégime. Kickdown sous forte charge : recherche parmi les deux rapports précédents d’un rapport assez long pour éviter une remontée immédiate, et inférieur à 85 % du régime maximal.
 
-À l’arrêt : vitesse sous 1.5 km/h pendant 1 s → première ; retour progressif à 850 RPM. Le statut mouvement s’active au-dessus de 3 km/h. Start en roulant sélectionne le premier rapport donnant au plus 3000 RPM, ou la sixième si aucun n’y parvient. Au-delà de la plage représentable : régime plafonné et état rupteur, sans son.
+À l’arrêt : vitesse sous 1.5 km/h pendant 1 s → première ; retour progressif à 850 RPM. Start en roulant choisit le rapport correspondant au palier de vitesse de croisière, puis vérifie le régime maximal. Au-delà de la plage représentable : régime plafonné et état rupteur.
 
 ## Boucle et simulation
 
 Pas fixe de 20 ms (50 Hz), UI 20 Hz. Les calculs utilisent le temps simulé fourni, jamais l’horloge du navigateur. L’interface suspend la simulation quand l’onglet est masqué, arrête le moteur et l’audio, et abandonne le rattrapage après un trou de 250 ms. La reprise audio nécessite Start. Ce comportement de laboratoire ne constitue pas une garantie de fonctionnement mobile en arrière-plan.
 
 - Pédales : accélération = `3.5 × pédale − 7 × frein − résistance`, résistance en mouvement = `0.12 + 0.00004 × vitesse²`. Modèle volontairement simple.
-- Vitesse cible : rejoint 0–130 km/h progressivement, accélération limitée entre −6 et +3.5 m/s².
+- Vitesse cible : rejoint 0–250 km/h progressivement, accélération limitée entre −6 et +3.5 m/s².
 - Accélération : impose directement −6 à +3.5 m/s².
 
-La vitesse reste entre 0 et 130 km/h. L’accélération transmise est toujours calculée à partir du déplacement effectif, y compris aux limites. À 130 km/h, maintenir la pédale ne simule donc pas une accélération infinie : la charge estimée redescend.
+La vitesse simulée reste entre 0 et 250 km/h ; la source GPS réelle n’a pas ce plafond. L’accélération transmise est calculée à partir du déplacement effectif, y compris aux limites.
 
 ## Essai manuel
 
@@ -56,7 +56,7 @@ La vitesse reste entre 0 et 130 km/h. L’accélération transmise est toujours 
 
 Choisir Ville (50 s), Accélération franche (27 s), Croisière (50 s) ou Freinage (14 s), puis « Lancer le scénario ». La lecture démarre le moteur et l’audio depuis un geste utilisateur, remet l’historique et le moteur à zéro et suit une courbe de vitesse prédéfinie à pas fixe. Freinage démarre à 100 km/h ; les autres commencent à l’arrêt. Les quatre trajets finissent à l’arrêt, puis coupent le moteur et l’audio. Stop interrompt la lecture ; Rejouer repart toujours du début. Les commandes manuelles sont bloquées pendant la lecture. Masquer l’onglet interrompt le scénario, sans reprise automatique.
 
-Choisir Calme ou Sport avant de démarrer. Calme conserve le seuil `maxRpm × (0.4 + 0.5 × throttle)` ; Sport utilise `maxRpm × (0.55 + 0.4 × throttle)` et prolonge les rapports. Les règles de rétrogradage et les protections restent communes. Le trajet est identique pour comparer les deux modes.
+Choisir Calme ou Sport avant de démarrer. Sport prolonge les seuils de vitesse de 40 %. Le trajet des scénarios reste identique pour comparer les deux modes. Voir [DRIVING-TUNING.md](DRIVING-TUNING.md) pour le réglage actuel de la conduite et du rendu habitacle.
 
 Volume, banque sonore, mode de boîte et régime maximal sont sauvegardés dans `localStorage` sous `rev.settings.v1`, puis restaurés au chargement, sans démarrer l’audio. Une donnée invalide est remplacée par sa valeur par défaut. Si le stockage est refusé, l’application reste utilisable et affiche que la sauvegarde est indisponible. « Réinitialiser l’essai » conserve les préférences.
 

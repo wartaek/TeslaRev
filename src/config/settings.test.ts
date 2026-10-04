@@ -9,6 +9,9 @@ test('settings preserve valid preferences and reject corrupt or obsolete values'
  assert.deepEqual(parseSettings(JSON.stringify({volume:'50',profileId:'missing',gearboxMode:'unknown'})),defaults);
  assert.equal(parseSettings('{"volume":200}').volume,100);
  assert.equal(parseSettings('{"volume":-2}').volume,0);
+ assert.equal(defaults.source,'real');
+ assert.equal(parseSettings('{"source":"simulation"}').source,'simulation');
+ assert.equal(parseSettings('{"source":"invalid"}').source,'real');
 });
 test('storage round trip and unavailable storage fallback',()=>{
  const original=Object.getOwnPropertyDescriptor(globalThis,'localStorage');let value:string|null=null;

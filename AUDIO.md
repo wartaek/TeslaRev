@@ -25,7 +25,7 @@ Les sons proviennent d’une archive communautaire du jeu. La présence d’une 
 - AudioProfile indépendant du profil mécanique : URLs et régimes de référence. Pas encore d’import de banque utilisateur.
 - Fondu à puissance constante entre les deux couches adjacentes, position logarithmique selon les RPM.
 - Playback rate = RPM / référence, borné entre 0.5 et 2. Les gains des couches hors plage sont nuls.
-- Charge : gain de 30 à 100 % du niveau sélectionné et ouverture du filtre.
+- Rendu habitacle : gain moteur de 45 à 90 % du volume sélectionné selon la charge ; filtre passe-bas de 850 + 2200 × charge + 0.07 × RPM Hz, plafonné à 3800 Hz. Les effets passent également par un filtre habitacle. Voir DRIVING-TUNING.md.
 - Effets procéduraux sans fichier supplémentaire : coupure plus impact grave au changement de rapport, crépitements courts en décélération au-dessus de 1 800 RPM et impulsions synchronisées avec la coupure du rupteur. Leur niveau suit le volume général.
 - Paramètres audio lissés sur 25–35 ms. Les sources tournent dans Web Audio ; React ne génère aucun échantillon audio.
 - Volume initial 20 %. Aucun son à l’ouverture. Start crée/réactive AudioContext depuis le geste utilisateur et charge/décode les quatre fichiers une seule fois. Aucun fetch pendant la conduite simulée.
