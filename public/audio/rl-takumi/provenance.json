@@ -1,0 +1,18 @@
+{
+  "source": "https://github.com/ItsBrank/RocketLeague-Audio/tree/main/Motors/SFX_Motor_TakumiMK2",
+  "sourceFile": "SFX_Motor_TakumiMK2_0002.ogg",
+  "sourceSha256": "77b84552975031469986f8d0974345b4ff2f27266edb5541a66a9c0e82bfb976",
+  "rights": "Third-party Rocket League asset from a community archive; no independent license or manufacturer endorsement claimed",
+  "processing": "Mono, resampled to 48 kHz, DC removal, 80 ms overlap loop seam, RMS normalization and peak bound",
+  "samples": [
+    {
+      "output": "engine.wav",
+      "sampleRate": 48000,
+      "duration": 3.5573125,
+      "rms": 0.16,
+      "peak": 0.5478070282713255,
+      "referenceRpm": 3600,
+      "calibration": "Provisional REV mapping, not original game telemetry"
+    }
+  ]
+}

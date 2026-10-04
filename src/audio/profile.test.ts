@@ -15,6 +15,16 @@ test('RPM sweep keeps crossfade power continuous with two adjacent voices maximu
 test('anchors select their own sample at native pitch', () => {
   muscleCar.layers.forEach((layer,i) => { const mix = layerMix(layer.referenceRpm); assert.equal(mix[i].gain,1); assert.equal(mix[i].rate,1); });
 });
+test('isolated game profiles keep exactly one engine voice throughout the RPM range',()=>{
+  for(const profile of audioProfiles.filter(p=>p.layers.length===1)){
+    for(let rpm=850;rpm<=7500;rpm+=25){
+      const mix=layerMix(rpm,profile);
+      assert.equal(mix.length,1);assert.equal(mix[0].gain,1);
+      assert.ok(mix[0].rate>=.25&&mix[0].rate<=2);
+    }
+    assert.ok(layerMix(6500,profile)[0].rate>layerMix(850,profile)[0].rate);
+  }
+});
 test('prepared PCM loops are non-silent, bounded and have no abnormal wrap discontinuity', () => {
   for(const profile of audioProfiles) for(const layer of profile.layers) {
     const bytes = readFileSync(new URL('../../public' + layer.url,import.meta.url));

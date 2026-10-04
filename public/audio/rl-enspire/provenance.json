@@ -1,0 +1,18 @@
+{
+  "source": "https://github.com/ItsBrank/RocketLeague-Audio/tree/main/Motors/SFX_Motor_Enspire",
+  "sourceFile": "SFX_Motor_Enspire_0004.ogg",
+  "sourceSha256": "4415c05c17e790ae2feaed7039ac0ea289391e7601720f7f3782166c16bc8907",
+  "rights": "Third-party Rocket League asset from a community archive; no independent license or manufacturer endorsement claimed",
+  "processing": "Mono, resampled to 48 kHz, DC removal, 80 ms overlap loop seam, RMS normalization and peak bound",
+  "samples": [
+    {
+      "output": "engine.wav",
+      "sampleRate": 48000,
+      "duration": 8.3093125,
+      "rms": 0.1007837232467305,
+      "peak": 0.84,
+      "referenceRpm": 3600,
+      "calibration": "Provisional REV mapping, not original game telemetry"
+    }
+  ]
+}

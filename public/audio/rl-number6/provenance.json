@@ -1,0 +1,18 @@
+{
+  "source": "https://github.com/ItsBrank/RocketLeague-Audio/tree/main/Motors/SFX_Motor_Number6",
+  "sourceFile": "SFX_Motor_Number6_0002.ogg",
+  "sourceSha256": "6b6a5d5e1119f978a6f2077a86c92fe667e85ca84f4648704be5f7e2f49fd97b",
+  "rights": "Third-party Rocket League asset from a community archive; no independent license or manufacturer endorsement claimed",
+  "processing": "Mono, resampled to 48 kHz, DC removal, 80 ms overlap loop seam, RMS normalization and peak bound",
+  "samples": [
+    {
+      "output": "engine.wav",
+      "sampleRate": 48000,
+      "duration": 3.962645833333333,
+      "rms": 0.16,
+      "peak": 0.7120837806790229,
+      "referenceRpm": 3600,
+      "calibration": "Provisional REV mapping, not original game telemetry"
+    }
+  ]
+}

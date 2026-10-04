@@ -178,7 +178,7 @@ function App() {
         <select id="engine-sound" value={profileId} onChange={e => selectProfile(e.target.value)} disabled={running || loading} aria-describedby="sound-help">
           {audioProfiles.map(profile => <option key={profile.id} value={profile.id}>{profile.name}</option>)}
         </select>
-        <p id="sound-help">{running || loading ? 'Arrête le moteur pour changer de son.' : `${selectedProfile.layers.length} boucles · ralenti, bas, moyen et haut régime`}</p>
+        <p id="sound-help">{running || loading ? 'Arrête le moteur pour changer de son.' : selectedProfile.layers.length===1?'Une seule boucle moteur · hauteur variable selon les RPM':`${selectedProfile.layers.length} boucles · ralenti, bas, moyen et haut régime`}</p>
         {selectedProfile.description&&<p>{selectedProfile.description}</p>}
         {selectedProfile.credit&&<p><a href={selectedProfile.credit.url} target="_blank" rel="noreferrer">{selectedProfile.credit.label}</a></p>}
       </div>

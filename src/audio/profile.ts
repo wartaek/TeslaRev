@@ -1,5 +1,5 @@
 export interface AudioLayer { url: string; referenceRpm: number }
-export interface AudioProfile { id: string; name: string; layers: readonly AudioLayer[]; turboGain?: number; description?:string; credit?:{label:string;url:string} }
+export interface AudioProfile { id: string; name: string; layers: readonly AudioLayer[]; turboGain?: number; minPlaybackRate?:number; description?:string; credit?:{label:string;url:string} }
 
 export const muscleCar: AudioProfile = {
   id: 'rl-musclecar02', name: 'MuscleCar02', turboGain: .42,
@@ -39,7 +39,16 @@ export const mclarenV8:AudioProfile={...generatedProfile('rev-mclaren-v8','McLar
   credit:{label:'Edvvc / Ed Pond · CC BY-SA 3.0 · source et adaptations',url:'/audio/f1-mclaren/ATTRIBUTION.txt'}};
 export const voltic=generatedProfile('rev-voltic','Électrique · expérimental','voltic',.18);
 
-export const audioProfiles: readonly AudioProfile[] = [muscleCar, turboV8, f1V10, mclarenV8, voltic];
+const gameProfile=(id:string,name:string,folder:string):AudioProfile=>({
+  id,name,minPlaybackRate:.25,
+  layers:[{url:`/audio/${folder}/engine.wav`,referenceRpm:3600}],
+  description:'Boucle moteur Rocket League isolée : une seule voix active, hauteur et charge pilotées par REV. Référence RPM provisoire.',
+});
+const number6=gameProfile('rev-f1-v10','Number6 · Rocket League','rl-number6');
+const car03=gameProfile('rev-turbo-v8','Car03 · Rocket League','rl-car03');
+const takumi=gameProfile('rl-takumi','Takumi MK2 · Rocket League','rl-takumi');
+const enspire=gameProfile('rev-voltic','Enspire · Rocket League','rl-enspire');
+export const audioProfiles: readonly AudioProfile[] = [muscleCar, mclarenV8, number6, car03, takumi, enspire];
 
 // Adjacent layers only, constant-power crossfade in logarithmic RPM space.
 export function layerMix(rpm: number, profile: AudioProfile = muscleCar) {
@@ -53,5 +62,5 @@ export function layerMix(rpm: number, profile: AudioProfile = muscleCar) {
     weights[right - 1] = Math.cos(t * Math.PI / 2);
     weights[right] = Math.sin(t * Math.PI / 2);
   }
-  return layers.map((l, i) => ({ gain: weights[i], rate: Math.min(2, Math.max(0.5, rpm / l.referenceRpm)) }));
+  return layers.map((l, i) => ({ gain: weights[i], rate: Math.min(2, Math.max(profile.minPlaybackRate??0.5, rpm / l.referenceRpm)) }));
 }

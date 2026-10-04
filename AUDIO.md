@@ -1,4 +1,8 @@
-# Banques audio — MuscleCar02 et REV V8 Turbo
+# Banques audio — profils disponibles
+
+Le sélecteur propose six profils : MuscleCar02, McLaren MP4/23, Number6, Car03, Takumi MK2 et Enspire. La McLaren est conservée après le retour utilisateur positif. La Williams extérieure et les profils synthétiques ne figurent plus dans le sélecteur après les retours sur leur rendu.
+
+Les quatre nouvelles banques Rocket League utilisent chacune une seule boucle moteur stable, sans mélange de plusieurs couches moteur. `scripts/fetch-game-banks.mjs` conserve les sources de l’archive communautaire ItsBrank/RocketLeague-Audio ; `scripts/prepare-game-banks.py` prépare les WAV mono 48 kHz avec raccord de boucle de 80 ms et normalisation. Chaque banque conserve sa provenance et l’empreinte de son fichier source. La référence de 3600 RPM est provisoire, avec une hauteur de lecture bornée entre 0.25 et 2. Ces noms ne revendiquent pas un moteur F1, Forza ou GTA authentique. Leur rendu perceptif reste à valider dans la voiture.
 
 ## Origine et préparation
 
@@ -16,7 +20,7 @@ Les sons proviennent d’une archive communautaire du jeu. La présence d’une 
 
 ## Traitement temps réel
 
-`DrivingState → EngineAudio → 4 sources en boucle → filtre passe-bas → volume → compresseur → analyseur → sortie système`.
+`DrivingState → EngineAudio → 1 ou 4 sources en boucle selon le profil → filtre passe-bas → volume → compresseur → analyseur → sortie système`.
 
 - AudioProfile indépendant du profil mécanique : URLs et régimes de référence. Pas encore d’import de banque utilisateur.
 - Fondu à puissance constante entre les deux couches adjacentes, position logarithmique selon les RPM.

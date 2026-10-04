@@ -1,6 +1,6 @@
 # REV — Virtual Engine Lab
 
-Moteur virtuel V8 indépendant de React, simulation, scénarios, GPS et accéléromètre expérimentaux, et moteur Web Audio avec deux banques de quatre boucles, turbo et wastegate. Manifest et cache PWA dans la version compilée. Voir [AUDIO.md](AUDIO.md), [PWA.md](PWA.md), [ANDROID.md](ANDROID.md), [VALIDATION-FINALE.md](VALIDATION-FINALE.md) et la [feuille de route post-V1](ROADMAP.md). Aucun backend ni dépendance Tesla dans la V1.
+Moteur virtuel V8 indépendant de React, simulation, scénarios, GPS et accéléromètre expérimentaux, et moteur Web Audio avec six profils sélectionnables : MuscleCar02, McLaren MP4/23, Number6, Car03, Takumi MK2 et Enspire. Les quatre dernières banques utilisent une seule boucle moteur ; turbo et wastegate dépendent du profil. Manifest et cache PWA dans la version compilée. Voir [AUDIO.md](AUDIO.md), [PWA.md](PWA.md), [ANDROID.md](ANDROID.md), [VALIDATION-FINALE.md](VALIDATION-FINALE.md) et la [feuille de route post-V1](ROADMAP.md). Aucun backend ni dépendance Tesla dans la V1.
 
 ## Lancer
 
