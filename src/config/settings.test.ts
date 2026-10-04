@@ -12,6 +12,7 @@ test('settings preserve valid preferences and reject corrupt or obsolete values'
  assert.equal(defaults.source,'real');
  assert.equal(parseSettings('{"source":"simulation"}').source,'simulation');
  assert.equal(parseSettings('{"source":"invalid"}').source,'real');
+ assert.equal(parseSettings('{"profileId":"custom-local"}').profileId,'custom-local');
 });
 test('storage round trip and unavailable storage fallback',()=>{
  const original=Object.getOwnPropertyDescriptor(globalThis,'localStorage');let value:string|null=null;

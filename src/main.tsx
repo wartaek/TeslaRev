@@ -3,7 +3,9 @@ import { createRoot } from 'react-dom/client';
 import { VirtualEngine, V8, type GearboxMode } from './engine/virtualEngine';
 import { DrivingSimulator, SIMULATION_MAX_SPEED } from './simulation/drivingSimulator';
 import { EngineAudio } from './audio/audioEngine';
-import { audioProfiles } from './audio/profile';
+import { audioProfiles, CUSTOM_PROFILE_ID, type AudioProfile } from './audio/profile';
+import { CustomBankPanel } from './audio/CustomBankPanel';
+import { loadCustomBank, validateRpms, type CustomBank } from './audio/customBank';
 import { loadSettings, saveSettings } from './config/settings';
 import { scenarios, ScenarioPlayer, type Scenario } from './simulation/scenarios';
 import './style.css';
@@ -16,9 +18,14 @@ const createEngine = (gearboxMode:GearboxMode,maxRpm:number) => new VirtualEngin
 type WakeLockSentinelLike = EventTarget & {release():Promise<void>};
 function App() {
   const [initialSettings] = useState(loadSettings);
+  const [customProfile,setCustomProfile] = useState<AudioProfile|null>(null);
+  const availableProfiles = customProfile?[...audioProfiles,customProfile]:audioProfiles;
+  const customUrls = useRef<string[]>([]);
+  const [libraryLoading,setLibraryLoading] = useState(true);
+  const [importBusy,setImportBusy] = useState(false);
   const engine = useRef(createEngine(initialSettings.gearboxMode,initialSettings.maxRpm));
   const simulator = useRef(new DrivingSimulator());
-  const audio = useRef(new EngineAudio(audioProfiles.find(p=>p.id===initialSettings.profileId)!));
+  const audio = useRef(new EngineAudio(audioProfiles.find(p=>p.id===initialSettings.profileId)??audioProfiles[0]));
   const player = useRef<ScenarioPlayer | null>(null);
   const sensors = useRef(new RealSensors());
   const sourceRef = useRef<'simulation'|'real'>(initialSettings.source);
@@ -39,7 +46,7 @@ function App() {
   const [scenarioTime, setScenarioTime] = useState(0);
   const [scenarioStatus, setScenarioStatus] = useState('Prêt');
   const selectedScenario = scenarios.find(s=>s.id===scenarioId)!;
-  const selectedProfile = audioProfiles.find(profile => profile.id === profileId)!;
+  const selectedProfile = availableProfiles.find(profile => profile.id === profileId)??audioProfiles[0];
   const [diagnostics, setDiagnostics] = useState(audio.current.diagnostics());
   const [state, setState] = useState(engine.current.state);
   const [running, setRunning] = useState(false);
@@ -53,6 +60,29 @@ function App() {
   const [paused, setPaused] = useState(false);
   const [driveMode,setDriveMode] = useState(true);
   const [wakeStatus,setWakeStatus] = useState('Écran actif normalement');
+  const installCustomBank = (bank:CustomBank,select:boolean) => {
+    validateRpms(bank.layers.map(layer=>layer.rpm));
+    if(!bank.layers.every(layer=>layer.wav instanceof Blob&&layer.wav.size>44))throw new Error('Banque locale invalide.');
+    const layers=[...bank.layers].sort((a,b)=>a.rpm-b.rpm);
+    const urls=layers.map(layer=>URL.createObjectURL(layer.wav));
+    const profile:AudioProfile={id:CUSTOM_PROFILE_ID,name:bank.name,layers:layers.map((layer,i)=>({url:urls[i],referenceRpm:layer.rpm})),description:'Enregistrements personnels · extraits préparés et conservés sur cet appareil.'};
+    if(select){
+      operation.current++;audio.current.dispose();audio.current=new EngineAudio(profile);audio.current.setVolume(volume/100);
+      setProfileId(profile.id);setDiagnostics(audio.current.diagnostics());setAudioStatus('Banque personnelle prête');
+    }
+    customUrls.current.forEach(url=>URL.revokeObjectURL(url));customUrls.current=urls;setCustomProfile(profile);
+  };
+  useEffect(()=>{
+    let disposed=false;
+    void loadCustomBank().then(bank=>{
+      if(disposed)return;
+      if(bank)installCustomBank(bank,initialSettings.profileId===CUSTOM_PROFILE_ID);
+      else if(initialSettings.profileId===CUSTOM_PROFILE_ID)setProfileId(audioProfiles[0].id);
+    }).catch(()=>{
+      if(!disposed){if(initialSettings.profileId===CUSTOM_PROFILE_ID)setProfileId(audioProfiles[0].id);setAudioStatus('Banque locale inaccessible · profils intégrés disponibles');}
+    }).finally(()=>{if(!disposed)setLibraryLoading(false);});
+    return()=>{disposed=true;customUrls.current.forEach(url=>URL.revokeObjectURL(url));};
+  },[]);
   useEffect(() => {
     audio.current.setVolume(volume / 100);
     engine.current.gearboxMode = gearboxMode;
@@ -140,7 +170,7 @@ function App() {
     setState(engine.current.state);setHistory([]);setEvents([]);setSensorState(sensors.current.snapshot());
   };
   const selectProfile = (id: string) => {
-    const profile = audioProfiles.find(item => item.id === id);
+    const profile = availableProfiles.find(item => item.id === id);
     if (!profile || id === profileId || running || loading) return;
     operation.current++;
     audio.current.dispose();
@@ -155,6 +185,7 @@ function App() {
   const changeMaxRpm = (value:number) => { setMaxRpm(value);engine.current=createEngine(gearboxMode,value);setState(engine.current.state);setHistory([]);setEvents([]); };
   const reset = () => { operation.current++; player.current = null; setScenarioActive(false); setScenarioTime(0); setScenarioStatus('Prêt'); audio.current.stop(); setLoading(false); setAudioStatus('Prêt'); engine.current = createEngine(gearboxMode,maxRpm); simulator.current = new DrivingSimulator(); setRunning(false); setMode('pedals'); setThrottle(0); setBrake(0); setSpeed(0); setAcceleration(0); setHistory([]); setEvents([]); setState(engine.current.state); };
   const toggleEngine = async (scenario?: Scenario) => {
+    if(importBusy||libraryLoading)return;
     if (!scenario && (running || loading)) { operation.current++; player.current = null; setScenarioActive(false); setScenarioStatus('Arrêté · rejouer depuis le début'); audio.current.stop(); engine.current.stop(); setRunning(false); setLoading(false); setAudioStatus('Arrêté'); return; }
     if(sourceRef.current==='real' && !sensors.current.snapshot().ready){sensors.current.start();setSensorState(sensors.current.snapshot(0));setAudioStatus('GPS lancé : autorise la localisation si nécessaire, puis attends une mesure valide avant de démarrer.');return;}
     if (scenario) {
@@ -185,11 +216,11 @@ function App() {
       <div className="gearbox-control"><div className="tabs"><button disabled={running||loading} aria-pressed={source==='simulation'} onClick={()=>changeSource('simulation')}>Simulation</button><button disabled={running||loading} aria-pressed={source==='real'} onClick={()=>changeSource('real')}>GPS réel</button></div></div>
       {source==='real'&&<div className="sound-picker"><p>Fixe le téléphone avant de configurer les capteurs.</p><button className="reset" disabled={running||loading} onClick={()=>{sensors.current.start();setSensorState(sensors.current.snapshot(0));}}>1. Activer / relancer le GPS</button><p role="status">{sensorState.status}</p><p>Précision : {sensorState.accuracy===null?'—':`${sensorState.accuracy.toFixed(0)} m`} · Vitesse : {sensorState.speedSource==='native'?'capteur GPS':sensorState.speedSource==='calculated'?'calculée entre deux positions':'—'} · Dernière mesure : {sensorState.age===null?'—':`${sensorState.age.toFixed(1)} s`}</p><label htmlFor="motion-axis">AXE DU TÉLÉPHONE <span>sens de la marche</span></label><select id="motion-axis" value={`${motionAxis}:${motionSign}`} disabled={running||loading||sensorState.motionCalibrating} onChange={e=>{const [axis,sign]=e.target.value.split(':');configureMotion(axis as MotionAxis,Number(sign) as 1|-1);}}><option value="y:1">Haut du téléphone vers l’avant</option><option value="y:-1">Bas du téléphone vers l’avant</option><option value="x:1">Côté droit vers l’avant</option><option value="x:-1">Côté gauche vers l’avant</option><option value="z:1">Écran vers l’avant</option><option value="z:-1">Dos du téléphone vers l’avant</option></select><button className="reset" disabled={running||loading||!sensorState.ready||sensorState.motionCalibrating} onClick={()=>void calibrateMotion()}>2. {sensorState.motionCalibrating?'Calibration en cours…':'Calibrer à l’arrêt'}</button><p role="status">{sensorState.motionStatus}</p><p>{sensorState.motionReady?'Réponse rapide par accéléromètre + correction GPS.':'Accélération estimée par GPS tant que le capteur mouvement n’est pas prêt.'} Données traitées localement, sans enregistrement ni envoi.</p></div>}
       <div className="sound-picker engine-picker">
-        <label htmlFor="engine-sound">SON MOTEUR <span>{audioProfiles.length} profil{audioProfiles.length > 1 ? 's' : ''} disponible{audioProfiles.length > 1 ? 's' : ''}</span></label>
-        <select id="engine-sound" value={profileId} onChange={e => selectProfile(e.target.value)} disabled={running || loading} aria-describedby="sound-help">
-          {audioProfiles.map(profile => <option key={profile.id} value={profile.id}>{profile.name}</option>)}
+        <label htmlFor="engine-sound">SON MOTEUR <span>{availableProfiles.length} profils disponibles</span></label>
+        <select id="engine-sound" value={selectedProfile.id} onChange={e => selectProfile(e.target.value)} disabled={running || loading || importBusy || libraryLoading} aria-describedby="sound-help">
+          {availableProfiles.map(profile => <option key={profile.id} value={profile.id}>{profile.name}</option>)}
         </select>
-        <p id="sound-help">{running || loading ? 'Arrête le moteur pour changer de son.' : selectedProfile.layers.length===1?'Une seule boucle moteur · hauteur variable selon les RPM':`${selectedProfile.layers.length} boucles · ralenti, bas, moyen et haut régime`}</p>
+        <p id="sound-help">{running || loading ? 'Arrête le moteur pour changer de son.' : selectedProfile.layers.length===1?'Une seule boucle moteur · hauteur variable selon les RPM':`${selectedProfile.layers.length} paliers de régime · transitions selon les RPM`}</p>
         {selectedProfile.description&&<p>{selectedProfile.description}</p>}
         {selectedProfile.credit&&<p><a href={selectedProfile.credit.url} target="_blank" rel="noreferrer">{selectedProfile.credit.label}</a></p>}
       </div>
@@ -199,7 +230,7 @@ function App() {
       <div className="stats"><div><label>RAPPORT</label><strong>{state.gear}<small> / 6</small></strong></div><div><label>VITESSE</label><strong>{state.speedKmh.toFixed(0)}<small> km/h</small></strong></div><div><label>CHARGE</label><strong>{(state.engineLoad * 100).toFixed(0)}<small> %</small></strong></div></div>
       <div className="gearbox-control"><span>BOÎTE AUTOMATIQUE</span><div className="tabs">{(['calm','sport'] as const).map(value => <button key={value} aria-pressed={gearboxMode===value} disabled={running || loading} onClick={()=>setGearboxMode(value)}>{value==='calm'?'Calme':'Sport'}</button>)}</div><p className="hint">{gearboxMode==='calm'?'Passages plus tôt pour une conduite souple.':'Rapports prolongés pour monter davantage dans les tours.'} Réglage à l’arrêt.</p></div>
       <fieldset disabled={running||loading}><Slider label="Régime maximal" value={maxRpm} min={5500} max={7500} step={250} unit="RPM" onChange={changeMaxRpm}/></fieldset>
-      <button className="primary" onClick={() => void toggleEngine()}>{loading ? 'Annuler le chargement' : running ? '■ Arrêter le moteur' : '▶ Démarrer le moteur'}</button>
+      <button className="primary" disabled={importBusy||libraryLoading} onClick={() => void toggleEngine()}>{loading ? 'Annuler le chargement' : running ? '■ Arrêter le moteur' : '▶ Démarrer le moteur'}</button>
       <p className="drive-status">{wakeStatus}</p>
       <Slider label="Volume moteur" value={volume} max={100} unit="%" onChange={v => { setVolume(v); audio.current.setVolume(v / 100); }}/>
       <p className="hint" role="status">{audioStatus}</p>
@@ -211,7 +242,8 @@ function App() {
     {mode === 'pedals' ? <><Slider label="Accélérateur simulé" value={throttle} max={100} unit="%" onChange={v => {setThrottle(v); simulator.current.throttle = v / 100;}}/><Slider label="Frein" value={brake} max={100} unit="%" onChange={v => {setBrake(v); simulator.current.brake = v / 100;}}/></> : mode === 'speed' ? <Slider label="Vitesse cible" value={speed} max={SIMULATION_MAX_SPEED} unit="km/h" onChange={v => {setSpeed(v); simulator.current.targetSpeed = v;}}/> : <Slider label="Accélération imposée" value={acceleration} min={-6} max={3.5} step={0.1} unit="m/s²" onChange={v => {setAcceleration(v); simulator.current.accelerationCommand = v;}}/>}
     </fieldset><p className="hint">Les commandes produisent un mouvement simulé. Le moteur déduit sa charge de ce mouvement, comme avec les futurs capteurs.</p><div className="telemetry"><span>Accélération <b>{state.acceleration.toFixed(2)} m/s²</b></span><span>Throttle estimé <b>{(state.virtualThrottle * 100).toFixed(0)} %</b></span></div><button className="reset" onClick={reset}>Réinitialiser l’essai</button></section>
     <section className="panel"><h2>Les 12 dernières secondes</h2><svg viewBox="0 0 480 150" role="img" aria-label="Historique du régime en vert et des rapports en orange"><path d="M0 25H480 M0 75H480 M0 125H480" stroke="#29343a"/><polyline fill="none" stroke="#c0f879" strokeWidth="2" points={history.map((p,i)=>`${i*2},${145-p.rpm/maxRpm*135}`).join(' ')}/><polyline fill="none" stroke="#eaa65b" strokeWidth="1.5" points={history.map((p,i)=>`${i*2},${145-p.gear/6*135}`).join(' ')}/></svg><p className="legend">● RPM <span>● Rapport</span></p><ul className="events">{events.length ? events.map((e,i)=><li key={i}>{e}</li>) : <li>Les passages de rapports apparaîtront ici.</li>}</ul></section></div>
-    <PwaPanel busy={running || loading}/>
+    <CustomBankPanel busy={running||loading||libraryLoading} onBusy={setImportBusy} onStored={bank=>installCustomBank(bank,true)}/>
+    <PwaPanel busy={running || loading || importBusy}/>
     <footer>Moteur 50 Hz · Interface 20 Hz · Ralenti 850 RPM · Limite {maxRpm.toLocaleString('fr-FR')} RPM<br/>Samples MuscleCar02 · GPS + accéléromètre expérimentaux.</footer>
   </main>;
 }

@@ -1,4 +1,5 @@
 export interface AudioLayer { url: string; referenceRpm: number }
+export const CUSTOM_PROFILE_ID = 'custom-local';
 export interface AudioProfile { id: string; name: string; layers: readonly AudioLayer[]; turboGain?: number; minPlaybackRate?:number; description?:string; credit?:{label:string;url:string} }
 
 export const muscleCar: AudioProfile = {

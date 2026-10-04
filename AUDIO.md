@@ -1,5 +1,7 @@
 # Banques audio — profils disponibles
 
+Une banque personnelle peut désormais être préparée dans Réglages depuis des MP3/WAV ou d’autres fichiers audio décodables. Extraits, références RPM, préécoute et stockage local : voir [CUSTOM-AUDIO.md](CUSTOM-AUDIO.md). Elle s’ajoute aux profils intégrés, sans envoi de fichier ni API IA pendant la conduite.
+
 Le sélecteur propose six profils : MuscleCar02, McLaren MP4/23, Number6, Car03, Takumi MK2 et Enspire. La McLaren est conservée après le retour utilisateur positif. La Williams extérieure et les profils synthétiques ne figurent plus dans le sélecteur après les retours sur leur rendu.
 
 Les quatre nouvelles banques Rocket League utilisent chacune une seule boucle moteur stable, sans mélange de plusieurs couches moteur. `scripts/fetch-game-banks.mjs` conserve les sources de l’archive communautaire ItsBrank/RocketLeague-Audio ; `scripts/prepare-game-banks.py` prépare les WAV mono 48 kHz avec raccord de boucle de 80 ms et normalisation. Chaque banque conserve sa provenance et l’empreinte de son fichier source. La référence de 3600 RPM est provisoire, avec une hauteur de lecture bornée entre 0.25 et 2. Ces noms ne revendiquent pas un moteur F1, Forza ou GTA authentique. Leur rendu perceptif reste à valider dans la voiture.
