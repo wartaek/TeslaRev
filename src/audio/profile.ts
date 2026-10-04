@@ -1,5 +1,5 @@
 export interface AudioLayer { url: string; referenceRpm: number }
-export interface AudioProfile { id: string; name: string; layers: readonly AudioLayer[]; turboGain?: number }
+export interface AudioProfile { id: string; name: string; layers: readonly AudioLayer[]; turboGain?: number; description?:string; credit?:{label:string;url:string} }
 
 export const muscleCar: AudioProfile = {
   id: 'rl-musclecar02', name: 'MuscleCar02', turboGain: .42,
@@ -31,9 +31,13 @@ const generatedProfile = (id:string,name:string,folder:string,turboGain=0):Audio
   ],
 });
 
-export const f1V10=generatedProfile('rev-f1-v10','F1 V10 · synthétique','f1-v10',.28);
-export const mclarenV8=generatedProfile('rev-mclaren-v8','McLaren V8 · synthétique','mclaren-v8',.72);
-export const voltic=generatedProfile('rev-voltic','Voltic électrique · synthétique','voltic',.18);
+export const f1V10:AudioProfile={...generatedProfile('rev-f1-v10','F1 V10 · Williams 1996 (enregistré)','f1-williams'),
+  description:'Vrai enregistrement extérieur de la Williams-Renault FW18. Boucles adaptées en hauteur ; réglage perceptif des RPM.',
+  credit:{label:'Edvvc / Ed Pond · CC BY-SA 3.0 · source et adaptations',url:'/audio/f1-williams/ATTRIBUTION.txt'}};
+export const mclarenV8:AudioProfile={...generatedProfile('rev-mclaren-v8','McLaren F1 · MP4/23 2008 (enregistré)','f1-mclaren'),
+  description:'Vrai enregistrement de la McLaren-Mercedes MP4/23 de Formule 1. Ce profil représente la F1 de 2008, pas une McLaren routière.',
+  credit:{label:'Edvvc / Ed Pond · CC BY-SA 3.0 · source et adaptations',url:'/audio/f1-mclaren/ATTRIBUTION.txt'}};
+export const voltic=generatedProfile('rev-voltic','Électrique · expérimental','voltic',.18);
 
 export const audioProfiles: readonly AudioProfile[] = [muscleCar, turboV8, f1V10, mclarenV8, voltic];
 

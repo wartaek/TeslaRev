@@ -1,0 +1,7 @@
+Williams-Renault FW18 (1996)
+Recording: Edvvc / Ed Pond
+Source: https://commons.wikimedia.org/wiki/File:Williams-Renault_FW18_(1996).ogg
+License: CC BY-SA 3.0 https://creativecommons.org/licenses/by-sa/3.0/
+Adapted loops by REV: cropping, mono conversion, pitch changes, seam crossfade and normalization.
+These adapted WAV files are distributed under CC BY-SA 3.0.
+No endorsement by the author or vehicle manufacturer.

@@ -31,6 +31,12 @@ Les sons proviennent d’une archive communautaire du jeu. La présence d’une 
 
 ## Validation
 
+### Remplacement des profils F1 trop tonals
+
+Après le retour utilisateur, les profils synthétiques F1 et McLaren ont été remplacés par des enregistrements extérieurs d’Edvvc / Ed Pond : Williams-Renault FW18 (1996) et McLaren-Mercedes MP4/23 (2008), disponibles sur Wikimedia Commons sous CC BY-SA 3.0. Les WAV adaptés conservent cette licence ; les sources, empreintes, crédits et opérations sont dans les fichiers `provenance.json` et `ATTRIBUTION.txt` de chaque banque. Les fichiers OGG source sont conservés dans `scripts/audio-sources/` et la préparation reproductible est dans `scripts/prepare-recordings.py`.
+
+Les quatre ancrages ne correspondent pas à quatre mesures au banc : ce sont des adaptations de hauteur d’un extrait moteur de chaque prise. Il s’agit de prises extérieures avec variations de régime et effet Doppler ; leur rendu dans REV reste à valider par l’utilisateur. La McLaren de 2008 est une F1, pas une supercar routière. Le profil électrique expérimental n’est pas un son original de GTA V.
+
 `npm test` couvre le moteur, les fondus entre couches, les fichiers PCM et le cycle de vie audio (avec un contexte simulé). Ce dernier test ne remplace pas un essai Web Audio réel.
 
 Dans l’interface, « Diagnostic audio » expose le contexte, le nombre de buffers et de voix, le RMS du signal après volume/compresseur et la latence de base annoncée par le navigateur. Cette latence n’inclut pas toute la chaîne acoustique/Bluetooth.

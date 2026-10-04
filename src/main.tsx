@@ -179,6 +179,8 @@ function App() {
           {audioProfiles.map(profile => <option key={profile.id} value={profile.id}>{profile.name}</option>)}
         </select>
         <p id="sound-help">{running || loading ? 'Arrête le moteur pour changer de son.' : `${selectedProfile.layers.length} boucles · ralenti, bas, moyen et haut régime`}</p>
+        {selectedProfile.description&&<p>{selectedProfile.description}</p>}
+        {selectedProfile.credit&&<p><a href={selectedProfile.credit.url} target="_blank" rel="noreferrer">{selectedProfile.credit.label}</a></p>}
       </div>
       <div className="rpm"><strong>{Math.round(state.rpm).toLocaleString('fr-FR')}</strong><span>RPM</span></div>
       <div className="meter" role="meter" aria-label="Régime moteur" aria-valuemin={0} aria-valuemax={maxRpm} aria-valuenow={Math.round(state.rpm)}><div style={{width: `${state.rpm/maxRpm*100}%`}}/></div><div className="scale"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>{(maxRpm/1000).toFixed(2).replace(/0$/,'')} × 1000</span></div>

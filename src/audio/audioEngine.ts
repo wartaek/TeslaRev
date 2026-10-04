@@ -92,7 +92,7 @@ export class EngineAudio {
       this.turbo.gain.gain.setTargetAtTime(this.volume*this.profile.turboGain!*boost*.22,now,.035);
     }
     if (previous && state.shiftCount > previous.shiftCount) this.playTransient('shift', state);
-    if(previous&&previous.rpm>2200&&previous.engineLoad>.45&&(previous.engineLoad-state.engineLoad>.28||state.shiftCount>previous.shiftCount))this.playTransient('wastegate',state);
+    if(this.profile.turboGain&&previous&&previous.rpm>2200&&previous.engineLoad>.45&&(previous.engineLoad-state.engineLoad>.28||state.shiftCount>previous.shiftCount))this.playTransient('wastegate',state);
     if (state.phase === 'overrun' && state.rpm > 1800 && state.speedKmh > 8 && state.timestamp-this.lastBurbleAt >= .18) {
       this.lastBurbleAt=state.timestamp; this.playTransient('burble',state);
     }

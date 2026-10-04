@@ -1,0 +1,62 @@
+{
+  "id": "f1-mclaren",
+  "file": "McLaren-Mercedes_MP4_23_(2008).ogg",
+  "name": "McLaren-Mercedes MP4/23 (2008)",
+  "author": "Edvvc / Ed Pond",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/c/cf/McLaren-Mercedes_MP4_23_(2008).ogg",
+  "page": "https://commons.wikimedia.org/wiki/File:McLaren-Mercedes_MP4_23_(2008).ogg",
+  "license": "CC BY-SA 3.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+  "sha256": "8991bb98425d9bc679ebabd25df94d777241e225e3a2172a7952922e473d8dd8",
+  "processing": "Mono conversion, cropped exterior recording, pitch adaptation, 80 ms overlap seam, DC removal and RMS/peak normalization",
+  "samples": [
+    {
+      "output": "idle.wav",
+      "referenceRpm": 850,
+      "pitchAdaptation": 0.42,
+      "sourceStartSeconds": 4.0,
+      "sourceEndSeconds": 6.2,
+      "sampleRate": 48000,
+      "duration": 5.158041666666667,
+      "rms": 0.15,
+      "peak": 0.3034748874125626,
+      "calibration": "Perceptual REV anchors; not measured vehicle RPM"
+    },
+    {
+      "output": "low.wav",
+      "referenceRpm": 1800,
+      "pitchAdaptation": 0.58,
+      "sourceStartSeconds": 4.0,
+      "sourceEndSeconds": 6.2,
+      "sampleRate": 48000,
+      "duration": 3.7130833333333335,
+      "rms": 0.15000000000000002,
+      "peak": 0.2992713738817269,
+      "calibration": "Perceptual REV anchors; not measured vehicle RPM"
+    },
+    {
+      "output": "mid.wav",
+      "referenceRpm": 3800,
+      "pitchAdaptation": 0.8,
+      "sourceStartSeconds": 4.0,
+      "sourceEndSeconds": 6.2,
+      "sampleRate": 48000,
+      "duration": 2.669979166666667,
+      "rms": 0.15000000000000002,
+      "peak": 0.3001525162507035,
+      "calibration": "Perceptual REV anchors; not measured vehicle RPM"
+    },
+    {
+      "output": "high.wav",
+      "referenceRpm": 6500,
+      "pitchAdaptation": 1,
+      "sourceStartSeconds": 4.0,
+      "sourceEndSeconds": 6.2,
+      "sampleRate": 48000,
+      "duration": 2.1199791666666665,
+      "rms": 0.15,
+      "peak": 0.3004554586439485,
+      "calibration": "Perceptual REV anchors; not measured vehicle RPM"
+    }
+  ]
+}
